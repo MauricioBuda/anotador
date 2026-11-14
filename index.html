@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5eee5" />
+    <meta name="description" content="Mi anotador: información importante organizada en un solo lugar." />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>Mi anotador</title>
+  </head>
+  <body>
+    <div id="app">
+      <main class="pantalla-inicial">
+        <div class="spinner spinner-grande" aria-label="Cargando"></div>
+        <p>Preparando Mi anotador…</p>
+      </main>
+    </div>
+    <div id="capa-carga" class="capa-carga oculto" aria-live="polite" aria-label="Procesando">
+      <div class="spinner"></div>
+      <span id="texto-carga">Procesando…</span>
+    </div>
+    <div id="contenedor-notificaciones" aria-live="assertive" aria-atomic="true"></div>
+    <div id="contenedor-modales"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

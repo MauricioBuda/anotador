@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function usuarioAutorizado() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email in [
+          'mauricio.ariel.buda@gmail.com',
+          'moniacevedo1970@gmail.com',
+          'pablobuda70@gmail.com'
+        ];
+    }
+
+    match /categorias/{categoriaId} {
+      allow read, write: if usuarioAutorizado();
+    }
+
+    match /indicesCategorias/{indiceId} {
+      allow read, write: if usuarioAutorizado();
+    }
+
+    match /datos/{datoId} {
+      allow read, write: if usuarioAutorizado();
+    }
+
+    match /papelera/{datoId} {
+      allow read, write: if usuarioAutorizado();
+    }
+
+    // Todo lo que no esté declarado arriba queda cerrado por defecto.
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}
