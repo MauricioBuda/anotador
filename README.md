@@ -210,3 +210,10 @@ Se corrigió la clase CSS de la capa de carga: ahora `index.html`, `notificacion
 Esta entrega corrige los iconos de acciones (mostrar, ocultar, copiar, editar, eliminar, restaurar y papelera), hace que la rueda de configuración abra siempre en Categorías, y reemplaza el formulario permanente de alta por una tarjeta plegable «Agregar nueva categoría». El selector de iconos se superpone al formulario sin empujar los demás campos, con sus dibujos centrados. Las categorías eliminadas se agrupan al final de la lista de administración. Las notificaciones exitosas muestran una tilde y el acordeón «Nuevo dato» tiene una apertura más pausada.
 
 No se modifican las reglas de Firestore ni las variables de Firebase. Al actualizar, conservá `.env`, `package-lock.json` y `node_modules`.
+
+
+## Ajustes de transiciones y administración — Etapa 1.4
+
+Se mantiene el modal de administración montado al cambiar entre Categorías y Papelera. El cambio de pestaña actualiza únicamente el contenido interno; volver a tocar la pestaña activa no ejecuta ninguna acción. El modal conserva dimensiones constantes y su contenido dispone de desplazamiento independiente.
+
+El formulario «Agregar nueva categoría» permanece montado dentro de un desplegable animado, sin desmontar la ventana de configuración. Las actualizaciones en tiempo real de Firestore reemplazan únicamente la lista de categorías o de papelera, por lo que no reinician el formulario ni su foco. Los acordeones principales y el selector de iconos utilizan transiciones más suaves.

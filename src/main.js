@@ -141,7 +141,7 @@ function mostrarAplicacion(usuario) {
         categorias = resultado;
         primerSnapshot.categorias = true;
         renderizarEstadoInterfaz();
-        if (document.querySelector('.modal-administracion')) renderizarModalAdministracion(pestanaAdministracionActual, true);
+        if (document.querySelector('.modal-administracion')) renderizarModalAdministracion(pestanaAdministracionActual);
         resolverPrimeraCarga();
       }, manejarError),
       observarDatos((resultado) => {
@@ -154,7 +154,7 @@ function mostrarAplicacion(usuario) {
         papelera = resultado.filter((registro) => diasRestantes(obtenerFechaVencimiento(registro)) > 0);
         primerSnapshot.papelera = true;
         renderizarEstadoInterfaz();
-        if (document.querySelector('.modal-administracion')) renderizarModalAdministracion(pestanaAdministracionActual, true);
+        if (document.querySelector('.modal-administracion')) renderizarModalAdministracion(pestanaAdministracionActual);
         resolverPrimeraCarga();
       }, manejarError),
     ];
@@ -424,17 +424,47 @@ function renderizarEstadoInterfaz() {
   renderizarBusqueda();
 }
 
+function actualizarEstadoDesplegable(envoltorio, abierto) {
+  if (!envoltorio) return;
+  const yaEstabaAbierto = envoltorio.classList.contains('abierto');
+  const contenido = envoltorio.firstElementChild;
+  envoltorio.setAttribute('aria-hidden', String(!abierto));
+  envoltorio.inert = !abierto;
+
+  // Las actualizaciones de Firestore no deben reiniciar una transición ya terminada.
+  if (yaEstabaAbierto === abierto) {
+    if (!abierto) {
+      envoltorio.style.overflow = 'hidden';
+      if (contenido) contenido.style.overflow = 'hidden';
+    }
+    return;
+  }
+
+  envoltorio.classList.toggle('abierto', abierto);
+  envoltorio.style.overflow = 'hidden';
+  if (contenido) contenido.style.overflow = 'hidden';
+  if (!abierto) return;
+
+  const permitirDesbordeAlFinalizar = (evento) => {
+    if (evento.target !== envoltorio || evento.propertyName !== 'grid-template-rows') return;
+    envoltorio.style.overflow = 'visible';
+    if (contenido) contenido.style.overflow = 'visible';
+    envoltorio.removeEventListener('transitionend', permitirDesbordeAlFinalizar);
+  };
+  envoltorio.addEventListener('transitionend', permitirDesbordeAlFinalizar);
+}
+
 function renderizarAcordeones() {
   const botonFormulario = document.querySelector('[data-acordeon="formulario"]');
-  const contenidoFormulario = document.getElementById('contenido-nuevo-dato');
+  const envoltorioFormulario = document.getElementById('envoltorio-nuevo-dato');
   botonFormulario?.setAttribute('aria-expanded', String(formularioAbierto));
-  contenidoFormulario?.classList.toggle('oculto', !formularioAbierto);
+  actualizarEstadoDesplegable(envoltorioFormulario, formularioAbierto);
   botonFormulario?.classList.toggle('acordeon-abierto', formularioAbierto);
 
   const botonDatos = document.querySelector('[data-acordeon="datos"]');
-  const contenidoDatos = document.getElementById('contenido-datos');
+  const envoltorioDatos = document.getElementById('envoltorio-datos');
   botonDatos?.setAttribute('aria-expanded', String(datosAbiertos));
-  contenidoDatos?.classList.toggle('oculto', !datosAbiertos);
+  actualizarEstadoDesplegable(envoltorioDatos, datosAbiertos);
   botonDatos?.classList.toggle('acordeon-abierto', datosAbiertos);
 }
 
@@ -526,19 +556,96 @@ function abrirAdministracion(pestana = 'categorias', abrirFormularioNuevaCategor
   renderizarModalAdministracion(pestana);
 }
 
-function renderizarModalAdministracion(pestana = 'categorias', preservarFormulario = false) {
-  pestanaAdministracionActual = pestana;
+function renderizarModalAdministracion(pestana = 'categorias') {
   const contenedor = document.getElementById('contenedor-modales');
-  const modalAnterior = contenedor.querySelector('.modal-administracion');
-  const formularioAnterior = preservarFormulario ? contenedor.querySelector('#formulario-nueva-categoria-admin') : null;
-  const valoresFormulario = formularioAnterior ? {
-    nombre: formularioAnterior.elements.nombre?.value || '',
-    icono: formularioAnterior.elements.icono?.value || 'vector:folder',
-    teniaFocoNombre: formularioAnterior.elements.nombre === document.activeElement,
-  } : null;
-  const desplazamientoAnterior = preservarFormulario && modalAnterior ? modalAnterior.scrollTop : 0;
+  const modalExiste = Boolean(contenedor.querySelector('.modal-administracion'));
+
+  if (!modalExiste) {
+    pestanaAdministracionActual = pestana;
+    contenedor.innerHTML = `
+      <div class="fondo-modal" data-cerrar-fondo="true">
+        <section class="modal modal-administracion" role="dialog" aria-modal="true" aria-labelledby="titulo-administracion">
+          <div class="modal-encabezado">
+            <div><span class="modal-kicker">Configuración</span><h2 id="titulo-administracion">Administrar Mi anotador</h2></div>
+            <button class="boton-icono" type="button" data-cerrar-modal aria-label="Cerrar">${icono('x')}</button>
+          </div>
+          <div class="pestanas-administracion">
+            <button type="button" class="pestana" data-admin-pestana="categorias" aria-pressed="false">Categorías</button>
+            <button type="button" class="pestana" data-admin-pestana="papelera" aria-pressed="false">Papelera <span data-conteo-papelera>${papelera.length}</span></button>
+          </div>
+          <div class="panel-contenido-administracion" id="panel-contenido-administracion" data-pestana=""></div>
+        </section>
+      </div>`;
+
+    contenedor.querySelector('[data-cerrar-modal]')?.addEventListener('click', cerrarModal);
+    contenedor.querySelector('.fondo-modal')?.addEventListener('click', (evento) => {
+      if (evento.target.classList.contains('fondo-modal')) cerrarModal();
+    });
+    contenedor.querySelectorAll('[data-admin-pestana]').forEach((boton) => boton.addEventListener('click', () => {
+      const pestanaSolicitada = boton.dataset.adminPestana;
+      // Una pestaña activa no debe volver a renderizarse ni provocar parpadeos.
+      if (pestanaSolicitada === pestanaAdministracionActual) return;
+      formularioCategoriaAdminAbierto = false;
+      renderizarModalAdministracion(pestanaSolicitada);
+    }));
+
+    const panel = contenedor.querySelector('#panel-contenido-administracion');
+    panel.addEventListener('click', manejarClickPanelAdministracion);
+    panel.addEventListener('submit', (evento) => {
+      if (evento.target?.id === 'formulario-nueva-categoria-admin') {
+        crearCategoriaDesdeAdministracion(evento);
+      }
+    });
+  } else if (pestana !== pestanaAdministracionActual) {
+    formularioCategoriaAdminAbierto = false;
+    pestanaAdministracionActual = pestana;
+  }
+
+  actualizarPestanasAdministracion(contenedor);
+  const panel = contenedor.querySelector('#panel-contenido-administracion');
+  const pestanaRenderizada = panel.dataset.pestana;
+
+  if (pestanaRenderizada !== pestana) {
+    panel.dataset.pestana = pestana;
+    panel.scrollTop = 0;
+    panel.innerHTML = pestana === 'categorias'
+      ? plantillaPanelCategoriasAdministracion()
+      : plantillaPanelPapeleraAdministracion();
+
+    if (pestana === 'categorias') {
+      conectarSelectorIconos(panel);
+      actualizarDesplegableNuevaCategoria();
+    }
+    return;
+  }
+
+  // En las actualizaciones de Firestore se reemplaza únicamente la lista.
+  // El modal, las pestañas, el formulario abierto y su foco permanecen intactos.
+  if (pestana === 'categorias') {
+    const lista = panel.querySelector('.lista-administracion-categorias');
+    if (lista) lista.innerHTML = plantillaListaCategoriasAdministracion();
+  } else {
+    const lista = panel.querySelector('.lista-papelera');
+    if (lista) lista.innerHTML = plantillaListaPapeleraAdministracion();
+  }
+  const conteoPapelera = contenedor.querySelector('[data-conteo-papelera]');
+  if (conteoPapelera) conteoPapelera.textContent = String(papelera.length);
+}
+
+function actualizarPestanasAdministracion(contenedor) {
+  contenedor.querySelectorAll('[data-admin-pestana]').forEach((boton) => {
+    const activa = boton.dataset.adminPestana === pestanaAdministracionActual;
+    boton.classList.toggle('activa', activa);
+    boton.setAttribute('aria-pressed', String(activa));
+  });
+  const conteoPapelera = contenedor.querySelector('[data-conteo-papelera]');
+  if (conteoPapelera) conteoPapelera.textContent = String(papelera.length);
+}
+
+function plantillaListaCategoriasAdministracion() {
   const listaCategorias = categorias.slice().sort(compararCategoriasAdministracion);
-  const contenidoCategorias = listaCategorias.length ? listaCategorias.map((categoria) => {
+  if (!listaCategorias.length) return '<p class="sin-resultados">Todavía no hay categorías.</p>';
+  return listaCategorias.map((categoria) => {
     const archivada = !categoria.activa;
     return `<article class="fila-administracion-categoria ${archivada ? 'categoria-inactiva' : ''}">
       <span class="icono-admin-categoria">${renderizarIcono(categoria.icono)}</span>
@@ -547,10 +654,14 @@ function renderizarModalAdministracion(pestana = 'categorias', preservarFormular
         ${!archivada ? `<button type="button" class="boton-icono" data-admin-accion="visibilidad" data-id="${escaparHTML(categoria.id)}" aria-label="${categoria.visibleEnFormulario ? 'Ocultar' : 'Mostrar'} en formulario" title="${categoria.visibleEnFormulario ? 'Ocultar en formulario' : 'Mostrar en formulario'}">${icono(categoria.visibleEnFormulario ? 'eye' : 'eye-off')}</button><button type="button" class="boton-icono" data-admin-accion="editar" data-id="${escaparHTML(categoria.id)}" aria-label="Editar categoría" title="Editar">${icono('pencil')}</button><button type="button" class="boton-icono accion-eliminar" data-admin-accion="archivar" data-id="${escaparHTML(categoria.id)}" aria-label="Eliminar categoría" title="Eliminar">${icono('trash-2')}</button>` : `<button type="button" class="boton boton-secundario boton-chico" data-admin-accion="recuperar" data-id="${escaparHTML(categoria.id)}">Recuperar</button>`}
       </div>
     </article>`;
-  }).join('') : '<p class="sin-resultados">Todavía no hay categorías.</p>';
+  }).join('');
+}
 
-  const contenidoPapelera = papelera.length ? papelera
-    .slice()
+function plantillaListaPapeleraAdministracion() {
+  if (!papelera.length) {
+    return '<div class="estado-vacio-papelera"><span class="estado-icono">' + icono('archive') + '</span><strong>La papelera está vacía</strong><span>Los datos que elimines van a aparecer acá durante 10 días.</span></div>';
+  }
+  return papelera.slice()
     .sort((a, b) => fechaEnMilisegundos(b.eliminadoEn) - fechaEnMilisegundos(a.eliminadoEn))
     .map((registro) => {
       const categoria = categorias.find((item) => item.id === registro.categoriaId);
@@ -559,60 +670,97 @@ function renderizarModalAdministracion(pestana = 'categorias', preservarFormular
         <div class="texto-papelera"><strong>${escaparHTML(registro.nombre)}</strong><span>${escaparHTML(categoria?.nombre || 'Categoría no disponible')}</span><small>Eliminado: ${escaparHTML(formatearFechaArgentina(registro.eliminadoEn))} · Quedan ${restantes} ${restantes === 1 ? 'día' : 'días'}</small></div>
         <div class="acciones-papelera"><button class="boton boton-secundario boton-chico" type="button" data-papelera-accion="restaurar" data-id="${escaparHTML(registro.id)}">${icono('refresh-ccw')} Restaurar</button><button class="boton-icono accion-eliminar" type="button" data-papelera-accion="eliminar" data-id="${escaparHTML(registro.id)}" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">${icono('trash-2')}</button></div>
       </article>`;
-    }).join('') : '<div class="estado-vacio-papelera"><span class="estado-icono">' + icono('archive') + '</span><strong>La papelera está vacía</strong><span>Los datos que elimines van a aparecer acá durante 10 días.</span></div>';
+    }).join('');
+}
 
-  contenedor.innerHTML = `
-    <div class="fondo-modal" data-cerrar-fondo="true"><section class="modal modal-administracion" role="dialog" aria-modal="true" aria-labelledby="titulo-administracion">
-      <div class="modal-encabezado"><div><span class="modal-kicker">Configuración</span><h2 id="titulo-administracion">Administrar Mi anotador</h2></div><button class="boton-icono" type="button" data-cerrar-modal aria-label="Cerrar">${icono('x')}</button></div>
-      <div class="pestanas-administracion"><button type="button" class="pestana ${pestana === 'categorias' ? 'activa' : ''}" data-admin-pestana="categorias">Categorías</button><button type="button" class="pestana ${pestana === 'papelera' ? 'activa' : ''}" data-admin-pestana="papelera">Papelera <span>${papelera.length}</span></button></div>
-      ${pestana === 'categorias' ? `<div class="contenido-administracion">
-        <button class="fila-administracion-categoria tarjeta-agregar-categoria" type="button" data-toggle-nueva-categoria aria-expanded="${formularioCategoriaAdminAbierto}">
-          <span class="icono-admin-categoria icono-agregar-categoria">${icono('plus')}</span>
-          <span class="texto-admin-categoria"><strong>Agregar nueva categoría</strong></span>
-          <span class="flecha-formulario-categoria">${icono('chevron-down')}</span>
-        </button>
-        ${formularioCategoriaAdminAbierto ? `<form id="formulario-nueva-categoria-admin" class="formulario-nueva-categoria">
+function plantillaPanelCategoriasAdministracion() {
+  return `<div class="contenido-administracion">
+    <button class="fila-administracion-categoria tarjeta-agregar-categoria" type="button" data-toggle-nueva-categoria aria-expanded="${formularioCategoriaAdminAbierto}">
+      <span class="icono-admin-categoria icono-agregar-categoria">${icono('plus')}</span>
+      <span class="texto-admin-categoria"><strong>Agregar nueva categoría</strong></span>
+      <span class="flecha-formulario-categoria">${icono('chevron-down')}</span>
+    </button>
+    <div class="desplegable-formulario-categoria ${formularioCategoriaAdminAbierto ? 'abierto' : ''}" id="desplegable-nueva-categoria-admin" aria-hidden="${!formularioCategoriaAdminAbierto}">
+      <div class="desplegable-formulario-categoria-interior">
+        <form id="formulario-nueva-categoria-admin" class="formulario-nueva-categoria" ${formularioCategoriaAdminAbierto ? '' : 'inert'}>
           <label class="campo"><span>Nombre de la categoría</span><input name="nombre" type="text" maxlength="50" required placeholder="Nombre de la categoría" /></label>
           <div class="campo campo-icono-nueva-categoria"><span>Icono</span>${renderizarSelectorIconos('icono')}</div>
           <div class="acciones-nueva-categoria"><button class="boton boton-secundario" type="button" data-cancelar-nueva-categoria>Cancelar</button><button class="boton boton-principal" type="submit">${icono('plus')} Agregar</button></div>
-        </form>` : ''}
-        <div class="lista-administracion-categorias">${contenidoCategorias}</div>
-      </div>` : `<div class="contenido-administracion contenido-papelera"><p class="texto-ayuda-papelera">Los registros se conservan durante 10 días desde su eliminación. Después dejan de poder restaurarse y la aplicación los elimina cuando alguno de ustedes vuelve a ingresar.</p><div class="lista-papelera">${contenidoPapelera}</div></div>`}
-    </section></div>`;
-  conectarSelectorIconos(contenedor);
-  contenedor.querySelector('[data-cerrar-modal]')?.addEventListener('click', cerrarModal);
-  contenedor.querySelector('.fondo-modal')?.addEventListener('click', (evento) => {
-    if (evento.target.classList.contains('fondo-modal')) cerrarModal();
-  });
-  contenedor.querySelectorAll('[data-admin-pestana]').forEach((boton) => boton.addEventListener('click', () => {
-    formularioCategoriaAdminAbierto = false;
-    renderizarModalAdministracion(boton.dataset.adminPestana);
-  }));
-  contenedor.querySelector('[data-toggle-nueva-categoria]')?.addEventListener('click', () => {
-    formularioCategoriaAdminAbierto = !formularioCategoriaAdminAbierto;
-    renderizarModalAdministracion('categorias');
-    if (formularioCategoriaAdminAbierto) contenedor.querySelector('#formulario-nueva-categoria-admin input[name="nombre"]')?.focus();
-  });
-  contenedor.querySelector('[data-cancelar-nueva-categoria]')?.addEventListener('click', () => {
-    formularioCategoriaAdminAbierto = false;
-    renderizarModalAdministracion('categorias');
-  });
-  const formularioNuevo = contenedor.querySelector('#formulario-nueva-categoria-admin');
-  formularioNuevo?.addEventListener('submit', crearCategoriaDesdeAdministracion);
-  if (valoresFormulario && formularioNuevo) {
-    formularioNuevo.elements.nombre.value = valoresFormulario.nombre;
-    establecerIconoSelector(contenedor, 'icono', valoresFormulario.icono);
+        </form>
+      </div>
+    </div>
+    <div class="lista-administracion-categorias">${plantillaListaCategoriasAdministracion()}</div>
+  </div>`;
+}
+
+function plantillaPanelPapeleraAdministracion() {
+  return `<div class="contenido-administracion contenido-papelera">
+    <p class="texto-ayuda-papelera">Los registros se conservan durante 10 días desde su eliminación. Después dejan de poder restaurarse y la aplicación los elimina cuando alguno de ustedes vuelve a ingresar.</p>
+    <div class="lista-papelera">${plantillaListaPapeleraAdministracion()}</div>
+  </div>`;
+}
+
+function actualizarDesplegableNuevaCategoria() {
+  const envoltorio = document.getElementById('desplegable-nueva-categoria-admin');
+  const tarjeta = document.querySelector('[data-toggle-nueva-categoria]');
+  const formulario = document.getElementById('formulario-nueva-categoria-admin');
+  if (!envoltorio || !formulario) return;
+  envoltorio.classList.toggle('abierto', formularioCategoriaAdminAbierto);
+  envoltorio.setAttribute('aria-hidden', String(!formularioCategoriaAdminAbierto));
+  formulario.inert = !formularioCategoriaAdminAbierto;
+  tarjeta?.setAttribute('aria-expanded', String(formularioCategoriaAdminAbierto));
+  const interior = envoltorio.querySelector('.desplegable-formulario-categoria-interior');
+  envoltorio.style.overflow = 'hidden';
+  if (interior) interior.style.overflow = 'hidden';
+  if (formularioCategoriaAdminAbierto) {
+    const permitirDesbordeAlFinalizar = (evento) => {
+      if (evento.target !== envoltorio || evento.propertyName !== 'grid-template-rows') return;
+      envoltorio.style.overflow = 'visible';
+      if (interior) interior.style.overflow = 'visible';
+      envoltorio.removeEventListener('transitionend', permitirDesbordeAlFinalizar);
+    };
+    envoltorio.addEventListener('transitionend', permitirDesbordeAlFinalizar);
   }
-  contenedor.querySelectorAll('[data-admin-accion]').forEach((boton) => boton.addEventListener('click', () => ejecutarAccionCategoria(boton.dataset.adminAccion, boton.dataset.id)));
-  contenedor.querySelectorAll('[data-papelera-accion]').forEach((boton) => boton.addEventListener('click', () => ejecutarAccionPapelera(boton.dataset.papeleraAccion, boton.dataset.id)));
-  const modalActual = contenedor.querySelector('.modal-administracion');
-  if (modalActual && preservarFormulario) modalActual.scrollTop = desplazamientoAnterior;
-  if (valoresFormulario?.teniaFocoNombre) formularioNuevo?.elements.nombre?.focus();
+}
+
+function manejarClickPanelAdministracion(evento) {
+  const toggleNueva = evento.target.closest('[data-toggle-nueva-categoria]');
+  if (toggleNueva) {
+    formularioCategoriaAdminAbierto = !formularioCategoriaAdminAbierto;
+    actualizarDesplegableNuevaCategoria();
+    if (formularioCategoriaAdminAbierto) {
+      window.setTimeout(() => {
+        if (formularioCategoriaAdminAbierto) document.querySelector('#formulario-nueva-categoria-admin input[name="nombre"]')?.focus();
+      }, 600);
+    }
+    return;
+  }
+
+  if (evento.target.closest('[data-cancelar-nueva-categoria]')) {
+    formularioCategoriaAdminAbierto = false;
+    const formulario = document.getElementById('formulario-nueva-categoria-admin');
+    formulario?.reset();
+    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', 'vector:folder');
+    actualizarDesplegableNuevaCategoria();
+    return;
+  }
+
+  const accionCategoria = evento.target.closest('[data-admin-accion]');
+  if (accionCategoria) {
+    ejecutarAccionCategoria(accionCategoria.dataset.adminAccion, accionCategoria.dataset.id);
+    return;
+  }
+
+  const accionPapelera = evento.target.closest('[data-papelera-accion]');
+  if (accionPapelera) {
+    ejecutarAccionPapelera(accionPapelera.dataset.papeleraAccion, accionPapelera.dataset.id);
+  }
 }
 
 async function crearCategoriaDesdeAdministracion(evento) {
   evento.preventDefault();
-  const valores = new FormData(evento.currentTarget);
+  const formulario = evento.currentTarget;
+  const valores = new FormData(formulario);
   try {
     mostrarCarga('Creando categoría…');
     await crearCategoria({
@@ -622,6 +770,9 @@ async function crearCategoriaDesdeAdministracion(evento) {
       usuario: usuarioActual,
     });
     formularioCategoriaAdminAbierto = false;
+    formulario.reset();
+    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', 'vector:folder');
+    actualizarDesplegableNuevaCategoria();
     mostrarNotificacion('La categoría se creó correctamente.');
     renderizarModalAdministracion('categorias');
   } catch (error) {

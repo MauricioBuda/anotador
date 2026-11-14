@@ -6,39 +6,67 @@ import { dirname, resolve } from 'node:path';
 
 const directorio = dirname(fileURLToPath(import.meta.url));
 const raiz = resolve(directorio, '..');
-const [main, css, notificaciones] = await Promise.all([
+const [main, plantillas, css] = await Promise.all([
   readFile(resolve(raiz, 'src/main.js'), 'utf8'),
+  readFile(resolve(raiz, 'src/interfaz/plantillas.js'), 'utf8'),
   readFile(resolve(raiz, 'src/estilos.css'), 'utf8'),
-  readFile(resolve(raiz, 'src/interfaz/notificaciones.js'), 'utf8'),
 ]);
 
-test('la rueda de configuración abre la pestaña Categorías', () => {
+test('la rueda abre siempre la pestaña Categorías', () => {
   assert.match(main, /boton-administrar[\s\S]{0,100}=> abrirAdministracion\('categorias'\)/);
 });
 
-test('el alta de categoría de administración inicia plegada y se abre desde su tarjeta', () => {
+test('tocar la pestaña ya activa no vuelve a renderizar el modal', () => {
+  assert.match(main, /if \(pestanaSolicitada === pestanaAdministracionActual\) return;/);
+  assert.match(main, /boton\.dataset\.adminPestana/);
+});
+
+test('el modal conserva su estructura al cambiar de pestaña', () => {
+  assert.match(main, /id="panel-contenido-administracion"/);
+  assert.match(main, /const pestanaRenderizada = panel\.dataset\.pestana/);
+  assert.match(main, /panel\.innerHTML = pestana === 'categorias'/);
+  assert.match(main, /El modal, las pestañas, el formulario abierto y su foco permanecen intactos/);
+  assert.doesNotMatch(main, /contenedor\.innerHTML = `\s*<div class="fondo-modal"[\s\S]*data-admin-pestana[\s\S]*?\$\{pestana === 'categorias'/);
+});
+
+test('las actualizaciones de Firestore modifican solo las listas internas', () => {
+  assert.match(main, /lista\.innerHTML = plantillaListaCategoriasAdministracion\(\)/);
+  assert.match(main, /lista\.innerHTML = plantillaListaPapeleraAdministracion\(\)/);
+  assert.match(main, /const modalExiste = Boolean\(contenedor\.querySelector\('\.modal-administracion'\)\)/);
+});
+
+test('el formulario de nueva categoría permanece montado y se pliega con estado accesible', () => {
+  assert.match(main, /id="desplegable-nueva-categoria-admin"/);
+  assert.match(main, /formulario\.inert = !formularioCategoriaAdminAbierto/);
   assert.match(main, /data-toggle-nueva-categoria/);
-  assert.match(main, /formularioCategoriaAdminAbierto \? `<form id="formulario-nueva-categoria-admin"/);
-  assert.match(main, /if \(formularioCategoriaAdminAbierto\) contenedor\.querySelector\('#formulario-nueva-categoria-admin input\[name="nombre"\]'\)\?\.focus\(\)/);
-  assert.doesNotMatch(main, /else if \(!preservarFormulario\) contenedor\.querySelector\('input'\)\?\.focus\(\)/);
+  assert.match(main, /actualizarDesplegableNuevaCategoria\(\)/);
+  assert.match(main, /setTimeout\([\s\S]*formularioCategoriaAdminAbierto[\s\S]*\.focus\(\)/);
 });
 
-test('el selector de iconos se despliega por encima del flujo y no desplaza el formulario', () => {
+test('el modal de administración conserva dimensiones y desplaza solo el contenido interno', () => {
+  assert.match(css, /\.modal-administracion\s*\{[^}]*height:\s*min\(82dvh,\s*790px\)[^}]*overflow:\s*hidden/);
+  assert.match(css, /\.panel-contenido-administracion\s*\{[^}]*flex:\s*1 1 0[^}]*overflow-y:\s*auto/);
+});
+
+test('el cambio entre pestañas anima solo el panel, sin animar ni reconstruir el modal', () => {
+  assert.match(css, /\.panel-contenido-administracion\s*>\s*\.contenido-administracion\s*\{[^}]*animation:/);
+  assert.match(main, /panel\.dataset\.pestana = pestana/);
+});
+
+test('los desplegables usan transiciones suaves de apertura y cierre', () => {
+  assert.match(css, /\.envoltorio-acordeon\s*\{[^}]*grid-template-rows:\s*0fr[^}]*transition:\s*grid-template-rows \.58s/);
+  assert.match(css, /\.envoltorio-acordeon\.abierto\s*\{[^}]*grid-template-rows:\s*1fr/);
+  assert.match(css, /\.desplegable-formulario-categoria\s*\{[^}]*grid-template-rows:\s*0fr[^}]*transition:\s*grid-template-rows \.52s/);
+  assert.match(css, /\.desplegable-formulario-categoria\.abierto\s*\{[^}]*grid-template-rows:\s*1fr/);
+});
+
+test('el selector de iconos realiza una transición de visibilidad sin alterar el flujo', () => {
   assert.match(css, /\.panel-opciones-iconos\s*\{[^}]*position:\s*absolute/);
-  assert.match(css, /\.selector-iconos-abierto\s*\{\s*z-index:/);
-  assert.match(css, /\.opcion-icono\s*\{[^}]*justify-items:\s*center/);
+  assert.match(css, /\.panel-opciones-iconos\s*\{[^}]*visibility:\s*hidden[^}]*opacity:\s*0/);
+  assert.match(css, /\.selector-iconos-abierto \.panel-opciones-iconos\s*\{[^}]*visibility:\s*visible[^}]*opacity:\s*1/);
 });
 
-test('el formulario administrativo mantiene separación entre selector y botones', () => {
-  assert.match(css, /\.formulario-nueva-categoria\s*\{[^}]*gap:\s*12px/);
-  assert.match(css, /\.acciones-nueva-categoria\s*\{[^}]*gap:\s*8px/);
-});
-
-test('la apertura del acordeón tiene una animación más pausada', () => {
-  assert.match(css, /\.contenido-acordeon\s*\{[^}]*animation:\s*desplegar \.4s/);
-});
-
-test('las notificaciones exitosas representan la confirmación con una tilde', () => {
-  assert.match(notificaciones, /<path d="m5 12 4 4L19 6"\/>/);
-  assert.match(notificaciones, /class="notificacion-icono"/);
+test('las dos secciones principales mantienen los nuevos envoltorios accesibles', () => {
+  assert.match(plantillas, /id="envoltorio-nuevo-dato" aria-hidden="true" inert/);
+  assert.match(plantillas, /id="envoltorio-datos" aria-hidden="false"/);
 });

@@ -45,7 +45,8 @@ export function plantillaAplicacion(usuario) {
         <button class="encabezado-acordeon" type="button" data-acordeon="formulario" aria-expanded="false" aria-controls="contenido-nuevo-dato">
           <span class="icono-acordeon">${icono('plus')}</span><span><strong>Nuevo dato</strong><small>Guardar una nueva información</small></span>${icono('chevron-down', 'flecha-acordeon')}
         </button>
-        <div class="contenido-acordeon oculto" id="contenido-nuevo-dato">
+        <div class="envoltorio-acordeon" id="envoltorio-nuevo-dato" aria-hidden="true" inert>
+          <div class="contenido-acordeon" id="contenido-nuevo-dato">
           <form id="formulario-nuevo-dato" class="formulario-nuevo-dato">
             <div class="campos-formulario">
               <label class="campo"><span>Categoría</span><select id="categoria-nuevo-dato" name="categoriaId" required><option value="">Seleccionar categoría</option></select></label>
@@ -56,6 +57,7 @@ export function plantillaAplicacion(usuario) {
             </div>
             <div class="acciones-formulario"><span class="nota-formulario">El dato se guarda de forma compartida para las tres cuentas autorizadas.</span><button class="boton boton-principal" type="submit">Guardar dato</button></div>
           </form>
+          </div>
         </div>
       </section>
 
@@ -63,9 +65,11 @@ export function plantillaAplicacion(usuario) {
         <button class="encabezado-acordeon" type="button" data-acordeon="datos" aria-expanded="true" aria-controls="contenido-datos">
           <span class="icono-acordeon">${icono('folder')}</span><span><strong>Datos cargados</strong><small>Consultá la información por categoría</small></span>${icono('chevron-down', 'flecha-acordeon')}
         </button>
-        <div class="contenido-acordeon" id="contenido-datos">
+        <div class="envoltorio-acordeon abierto" id="envoltorio-datos" aria-hidden="false">
+          <div class="contenido-acordeon" id="contenido-datos">
           <div id="botones-categorias" class="botones-categorias"></div>
           <div id="contenido-categoria" class="contenido-categoria"><div class="estado-sin-seleccion"><span class="estado-icono">${icono('folder')}</span><p>Seleccioná una categoría para consultar sus datos.</p></div></div>
+          </div>
         </div>
       </section>
       <footer class="pie-aplicacion"><span>Mi anotador</span><span>Un espacio compartido para información importante</span></footer>

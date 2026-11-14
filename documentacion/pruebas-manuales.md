@@ -63,3 +63,15 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 - [ ] Comprobar que las notificaciones de éxito muestren una tilde y que los iconos de mostrar, ocultar, copiar, editar, eliminar y restaurar sean distintos y correctos.
 - [ ] Comprobar que el acordeón «Nuevo dato» se despliegue de forma pausada.
 - [ ] Probar escritorio y móvil, incluyendo 320 px de ancho.
+
+
+## Verificación de transiciones y administración (Etapa 1.4)
+
+1. Abrir la rueda de configuración y comprobar que el modal aparece en Categorías sin enfocar automáticamente el formulario de alta.
+2. Tocar Categorías mientras ya está activa: no debe cambiar el contenido ni parpadear.
+3. Cambiar a Papelera y volver a Categorías: el marco del modal debe mantener el mismo tamaño y posición; solo debe cambiar el panel interior.
+4. Abrir y cerrar «Agregar nueva categoría»: la tarjeta y el resto del modal deben permanecer en su lugar. Al abrirse el formulario, el foco debe pasar al campo de nombre.
+5. Mientras el formulario está abierto, abrir el selector de iconos y comprobar que su panel se superpone sin empujar otros campos.
+6. Dejar la configuración abierta y, desde otra sesión autorizada, modificar una categoría o un elemento de la papelera. La actualización en tiempo real debe refrescar solo la lista correspondiente, sin cerrar el formulario ni perder el texto que se está escribiendo.
+7. Cerrar y abrir los acordeones principales en escritorio y celular; apertura y cierre deben ser graduales y no deben dejar contenido oculto enfocable.
+8. Repetir las pruebas en un navegador móvil y en escritorio, verificando que el modal tenga desplazamiento interno cuando su contenido supera el espacio disponible.
