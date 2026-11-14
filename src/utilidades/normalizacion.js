@@ -85,3 +85,10 @@ export function compararCategorias(a, b) {
   const fechaB = fechaAFechaJS(b?.creadoEn)?.getTime() || 0;
   return fechaA - fechaB || String(a?.nombre || '').localeCompare(String(b?.nombre || ''), 'es');
 }
+
+export function compararCategoriasAdministracion(a, b) {
+  const archivadaA = !a?.activa;
+  const archivadaB = !b?.activa;
+  if (archivadaA !== archivadaB) return Number(archivadaA) - Number(archivadaB);
+  return compararCategorias(a, b);
+}

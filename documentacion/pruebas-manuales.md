@@ -12,6 +12,10 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 ## Categorías
 
 - [ ] Confirmar que se creen las cinco categorías iniciales una sola vez.
+- [ ] Abrir la ruedita y comprobar que ingrese primero en la pestaña Categorías, sin abrir el teclado.
+- [ ] Comprobar que «Agregar nueva categoría» aparezca como tarjeta plegada.
+- [ ] Abrir la tarjeta y comprobar que recién entonces se despliegue el formulario y aparezca el teclado en celular.
+- [ ] Abrir el selector de iconos y comprobar que sus opciones queden centradas y que el panel no desplace los campos ni el botón Agregar.
 - [ ] Crear una categoría desde Administración sin elegir icono y comprobar que use la carpeta genérica.
 - [ ] Crear una categoría desde Administración con un icono vectorial.
 - [ ] Crear otra categoría con un emoji.
@@ -21,6 +25,7 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 - [ ] Ocultar una categoría del formulario y comprobar que sus registros sigan consultables.
 - [ ] Archivar una categoría con registros y comprobar que sus datos sigan visibles.
 - [ ] Recuperar una categoría archivada.
+- [ ] Archivar varias categorías y comprobar que queden agrupadas al final de la lista de Administración.
 
 ## Registros
 
@@ -55,4 +60,6 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 - [ ] Confirmar que «Nuevo dato» inicie cerrado y «Datos cargados» abierto.
 - [ ] Confirmar que no se muestre ninguna categoría hasta seleccionarla.
 - [ ] Probar notificaciones, diálogos, spinners y bloqueo de controles durante las operaciones.
+- [ ] Comprobar que las notificaciones de éxito muestren una tilde y que los iconos de mostrar, ocultar, copiar, editar, eliminar y restaurar sean distintos y correctos.
+- [ ] Comprobar que el acordeón «Nuevo dato» se despliegue de forma pausada.
 - [ ] Probar escritorio y móvil, incluyendo 320 px de ancho.

@@ -203,3 +203,10 @@ Las pruebas automáticas cubren normalización de nombres, detección de equival
 ## Actualización 1.2
 
 Se corrigió la clase CSS de la capa de carga: ahora `index.html`, `notificaciones.js` y `estilos.css` utilizan `oculto` de forma consistente. Esto evita que el fondo borroso y el spinner permanezcan visibles después de finalizar una operación. Se agregó una prueba de regresión para esta coincidencia.
+
+
+## Ajustes de interfaz — Etapa 1.3
+
+Esta entrega corrige los iconos de acciones (mostrar, ocultar, copiar, editar, eliminar, restaurar y papelera), hace que la rueda de configuración abra siempre en Categorías, y reemplaza el formulario permanente de alta por una tarjeta plegable «Agregar nueva categoría». El selector de iconos se superpone al formulario sin empujar los demás campos, con sus dibujos centrados. Las categorías eliminadas se agrupan al final de la lista de administración. Las notificaciones exitosas muestran una tilde y el acordeón «Nuevo dato» tiene una apertura más pausada.
+
+No se modifican las reglas de Firestore ni las variables de Firebase. Al actualizar, conservá `.env`, `package-lock.json` y `node_modules`.

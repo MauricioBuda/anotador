@@ -10,6 +10,7 @@ import {
   obtenerIdsPapeleraVencida,
   formatearFechaArgentina,
   compararCategorias,
+  compararCategoriasAdministracion,
 } from '../src/utilidades/normalizacion.js';
 
  test('normalización ignora mayúsculas, tildes y espacios', () => {
@@ -109,5 +110,18 @@ test('las categorías iniciales conservan su posición y las personalizadas sigu
   ];
   assert.deepEqual(categorias.sort(compararCategorias).map((categoria) => categoria.id), [
     'claves', 'otros', 'nueva-a', 'nueva-b',
+  ]);
+});
+
+
+test('las categorías eliminadas se muestran después de las categorías activas en administración', () => {
+  const categorias = [
+    { id: 'archivada-nueva', activa: false, inicial: false, creadoEn: new Date('2026-11-10T00:00:00Z'), nombre: 'Archivada nueva' },
+    { id: 'activa-personalizada', activa: true, inicial: false, creadoEn: new Date('2026-11-16T00:00:00Z'), nombre: 'Activa personalizada' },
+    { id: 'archivada-inicial', activa: false, inicial: true, orden: 1, nombre: 'Claves archivada' },
+    { id: 'activa-inicial', activa: true, inicial: true, orden: 2, nombre: 'DNI' },
+  ];
+  assert.deepEqual(categorias.sort(compararCategoriasAdministracion).map((categoria) => categoria.id), [
+    'activa-inicial', 'activa-personalizada', 'archivada-inicial', 'archivada-nueva',
   ]);
 });

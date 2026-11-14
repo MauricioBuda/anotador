@@ -104,7 +104,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .encabezado-acordeon small { color: var(--texto-suave); font-size: 11px; }
 .flecha-acordeon { width: 17px; height: 17px; margin-left: auto; color: #9f8c81; transition: transform .25s ease; }
 .acordeon-abierto .flecha-acordeon { transform: rotate(180deg); }
-.contenido-acordeon { padding: 0 20px 20px; animation: desplegar .22s ease both; }
+.contenido-acordeon { padding: 0 20px 20px; animation: desplegar .4s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes desplegar { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 .formulario-nuevo-dato { padding: 17px; border-radius: 14px; background: #fbf7f1; }
@@ -189,11 +189,19 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .pestana.activa { color: var(--tierra-oscuro); background: #fffdfa; box-shadow: 0 2px 7px rgba(80, 58, 43, .08); }
 .pestana span { min-width: 19px; height: 19px; display: grid; place-items: center; padding: 0 5px; border-radius: 20px; color: var(--rosado-oscuro); background: var(--rosado-suave); font-size: 9px; }
 .contenido-administracion { display: grid; gap: 14px; }
-.formulario-nueva-categoria { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(180px, .9fr) auto; align-items: end; gap: 10px; padding: 13px; border: 1px solid #eee3da; border-radius: 12px; background: #fbf7f1; }
-.formulario-nueva-categoria .campo { gap: 5px; }
+.tarjeta-agregar-categoria { width: 100%; text-align: left; cursor: pointer; }
+.tarjeta-agregar-categoria:hover { border-color: #d9b7c1; background: #fff9fa; }
+.tarjeta-agregar-categoria .icono-agregar-categoria { color: var(--rosado-oscuro); background: var(--rosado-suave); }
+.tarjeta-agregar-categoria .icono-agregar-categoria svg { width: 19px; height: 19px; }
+.flecha-formulario-categoria { display: grid; place-items: center; margin-left: auto; color: #9f8c81; transition: transform .2s ease; }
+.flecha-formulario-categoria svg { width: 17px; height: 17px; }
+.tarjeta-agregar-categoria[aria-expanded="true"] .flecha-formulario-categoria { transform: rotate(180deg); }
+.formulario-nueva-categoria { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .9fr) auto; align-items: end; gap: 12px; overflow: visible; padding: 13px; border: 1px solid #eee3da; border-radius: 12px; background: #fbf7f1; animation: desplegar .28s ease both; }
+.formulario-nueva-categoria .campo { min-width: 0; gap: 5px; }
 .formulario-nueva-categoria .campo input, .formulario-nueva-categoria .campo select { padding: 9px 10px; font-size: 12px; }
-.formulario-nueva-categoria > .boton { min-height: 38px; padding: 8px 12px; white-space: nowrap; }
-.formulario-nueva-categoria > .boton svg { width: 16px; height: 16px; }
+.acciones-nueva-categoria { display: flex; align-items: center; gap: 8px; }
+.acciones-nueva-categoria > .boton { min-height: 38px; padding: 8px 12px; white-space: nowrap; }
+.acciones-nueva-categoria > .boton svg { width: 16px; height: 16px; }
 .lista-administracion-categorias, .lista-papelera { display: grid; gap: 7px; }
 .fila-administracion-categoria { display: flex; align-items: center; gap: 11px; min-height: 59px; padding: 9px 10px; border: 1px solid #f0e8e0; border-radius: 11px; background: #fffefa; }
 .fila-administracion-categoria.categoria-inactiva { background: #f8f4ef; opacity: .78; }
@@ -223,12 +231,13 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .fondo-notificacion { z-index: 3000; }
 .notificacion { width: min(100%, 370px); display: flex; align-items: center; gap: 12px; padding: 17px 19px; border: 1px solid #e7d8cf; border-radius: 15px; background: #fffdfa; box-shadow: 0 18px 50px rgba(58, 39, 29, .18); }
 .notificacion p { margin: 0; color: var(--tierra-oscuro); font-size: 12px; line-height: 1.55; }
-.notificacion-indicador { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #8eaa8c; box-shadow: 0 0 0 4px #edf4ea; }
-.notificacion-error .notificacion-indicador { background: #bd676d; box-shadow: 0 0 0 4px #f8e9e9; }
-.notificacion-advertencia .notificacion-indicador { background: #c79c5b; box-shadow: 0 0 0 4px #fbf2e2; }
+.notificacion-icono { width: 21px; height: 21px; flex: 0 0 auto; color: #72956f; }
+.notificacion-error .notificacion-icono { color: #bd676d; }
+.notificacion-advertencia .notificacion-icono { color: #b8873e; }
 
 /* Componentes del selector visual de iconos (estilos base de escritorio). */
-.selector-iconos { display: grid; gap: 6px; }
+.selector-iconos { position: relative; display: grid; gap: 6px; }
+.selector-iconos-abierto { z-index: 80; }
 .boton-seleccion-icono { width: 100%; min-height: 39px; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border: 1px solid #e7dcd1; border-radius: 10px; color: var(--tierra-oscuro); background: #fffefa; text-align: left; cursor: pointer; }
 .boton-seleccion-icono:hover { border-color: #c994a3; background: #fff9fa; }
 .vista-previa-icono { width: 25px; height: 25px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: var(--tierra); background: #f5eee6; }
@@ -237,12 +246,13 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .texto-seleccion-icono { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .boton-seleccion-icono > svg { width: 15px; height: 15px; margin-left: auto; transition: transform .18s ease; }
 .selector-iconos-abierto .boton-seleccion-icono > svg { transform: rotate(180deg); }
-.panel-opciones-iconos { display: none; max-height: 225px; overflow: auto; padding: 9px; border: 1px solid #e8dcd3; border-radius: 11px; background: #fffdfa; box-shadow: 0 6px 16px rgba(80, 58, 43, .06); }
+.panel-opciones-iconos { position: absolute; z-index: 90; top: calc(100% + 6px); left: 0; display: none; width: min(340px, calc(100vw - 80px)); max-height: 225px; overflow: auto; padding: 9px; border: 1px solid #e8dcd3; border-radius: 11px; background: #fffdfa; box-shadow: 0 10px 25px rgba(80, 58, 43, .15); }
 .selector-iconos-abierto .panel-opciones-iconos { display: grid; gap: 10px; }
 .grupo-opciones-iconos { display: grid; gap: 7px; }
 .grupo-opciones-iconos > span { color: var(--texto-suave); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .grupo-opciones-iconos > div { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
-.opcion-icono { min-width: 0; min-height: 34px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 8px; color: var(--tierra); background: #f8f3ed; cursor: pointer; }
+.opcion-icono { width: 100%; min-width: 0; min-height: 34px; display: grid; place-items: center; justify-items: center; align-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; color: var(--tierra); background: #f8f3ed; text-align: center; cursor: pointer; }
+.opcion-icono > .icono-vector, .opcion-icono > .icono-emoji { justify-self: center; align-self: center; margin: 0 auto; }
 .opcion-icono:hover { border-color: #d9b7c1; background: #fff5f7; }
 .opcion-icono.seleccionada { border-color: var(--rosado); color: var(--rosado-oscuro); background: var(--rosado-suave); box-shadow: inset 0 0 0 1px rgba(199, 140, 157, .15); }
 .opcion-icono .icono-vector { width: 17px; height: 17px; }
@@ -311,9 +321,11 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .modal { max-height: 90dvh; padding: 17px; border-radius: 16px; }
   .modal-administracion { padding: 16px; }
   .modal-encabezado h2 { font-size: 20px; }
-  .formulario-nueva-categoria { grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
-  .formulario-nueva-categoria > .campo:first-child { grid-column: 1 / -1; }
-  .formulario-nueva-categoria > .boton { min-height: 37px; }
+  .formulario-nueva-categoria { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 10px; }
+  .formulario-nueva-categoria > .campo { grid-column: auto; }
+  .acciones-nueva-categoria { justify-content: flex-end; gap: 8px; }
+  .acciones-nueva-categoria > .boton { min-height: 37px; }
+  .panel-opciones-iconos { width: min(330px, calc(100vw - 72px)); }
   .fila-administracion-categoria { gap: 7px; padding: 7px; }
   .icono-admin-categoria { width: 29px; height: 29px; }
   .icono-admin-categoria .icono-vector { width: 16px; height: 16px; }
@@ -344,6 +356,6 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .texto-categoria { font-size: 9px; }
   .boton-accion-dato { width: 26px; }
   .fila-dato { gap: 4px 5px; padding: 7px; }
-  .formulario-nueva-categoria { grid-template-columns: 1fr; }
-  .formulario-nueva-categoria > .campo:first-child { grid-column: auto; }
+  .formulario-nueva-categoria { grid-template-columns: minmax(0, 1fr); }
+  .acciones-nueva-categoria { flex-wrap: wrap; }
 }

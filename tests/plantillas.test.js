@@ -5,6 +5,7 @@ import {
   plantillaBotonCategoria,
   plantillaRegistros,
   plantillaResultadosBusqueda,
+  icono,
 } from '../src/interfaz/plantillas.js';
 
 const usuarioPrueba = {
@@ -72,4 +73,14 @@ test('los resultados de búsqueda identifican la categoría', () => {
   const html = plantillaResultadosBusqueda([registroPrueba], [categoriaPrueba]);
   assert.match(html, /Banco de prueba/);
   assert.match(html, /Claves/);
+});
+
+
+test('los iconos de acciones tienen dibujos propios y no usan la carpeta genérica', () => {
+  const acciones = ['eye', 'eye-off', 'copy', 'pencil', 'trash-2', 'refresh-ccw', 'archive'];
+  for (const nombre of acciones) {
+    const html = icono(nombre);
+    assert.match(html, /<svg/);
+    assert.doesNotMatch(html, /M3 7a2 2 0 0 1 2-2h5/);
+  }
 });
