@@ -84,3 +84,15 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 - [ ] Si se elimina definitivamente una categoría inicial, cerrar sesión y volver a ingresar: no debe reaparecer por la inicialización automática.
 - [ ] En una categoría nueva, no elegir icono y comprobar que se guarda con la carpeta genérica.
 - [ ] Comprobar que la interfaz no muestra mensajes sobre la cantidad de cuentas o usuarios habilitados.
+
+
+## Etapa 1.6 — creación de registros y campo opcional de categoría
+
+1. Publicar el archivo `firestore.rules` actualizado.
+2. Iniciar sesión con una cuenta autorizada.
+3. Crear un registro dentro de una categoría inicial existente (por ejemplo, Claves).
+4. Confirmar que el registro se guarda y aparece en la categoría.
+5. Crear un registro con una categoría nueva desde el formulario y confirmar que la categoría y el registro se crean juntos.
+6. Confirmar que las categorías marcadas temporalmente con `eliminandoDefinitivamente: true` no aceptan registros nuevos ni cambios de categoría.
+
+La prueba manual con Firebase real es necesaria; las pruebas automáticas del repositorio verifican el contenido de las reglas, pero no sustituyen al emulador o a una prueba contra el proyecto real.

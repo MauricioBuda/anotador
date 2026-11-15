@@ -16,7 +16,9 @@ service cloud.firestore {
     function categoriaDisponible(categoriaId) {
       let rutaCategoria = /databases/$(database)/documents/categorias/$(categoriaId);
       return existsAfter(rutaCategoria)
-        && getAfter(rutaCategoria).data.eliminandoDefinitivamente != true;
+        // Las categorías existentes no incluyen este campo normalmente.
+        // Map.get evita que un campo ausente provoque un error y deniegue la escritura.
+        && getAfter(rutaCategoria).data.get('eliminandoDefinitivamente', false) != true;
     }
 
     match /categorias/{categoriaId} {

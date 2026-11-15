@@ -105,6 +105,15 @@ En cada inicio de sesión autorizado, la aplicación consulta la papelera y elim
 
 **Alcance de esta modalidad:** si nadie abre la aplicación, los documentos vencidos pueden permanecer almacenados en Firestore hasta el próximo ingreso autorizado. No se usa un proceso de borrado en segundo plano de Google. Esta decisión evita depender de TTL y de su facturación.
 
+## Corrección de reglas de Firestore — Etapa 1.6
+
+Esta etapa corrige la comprobación de disponibilidad de categorías en `firestore.rules`.
+Los documentos de categorías creados por la aplicación no tienen necesariamente el campo opcional `eliminandoDefinitivamente`. Las reglas deben leerlo con `Map.get('eliminandoDefinitivamente', false)` para que la ausencia del campo se interprete como `false` y no provoque un rechazo de permisos.
+
+Después de reemplazar el proyecto con esta entrega, hay que volver a publicar el archivo `firestore.rules` desde **Firestore Database → Rules → Publicar**. El despliegue del sitio en Vercel no publica reglas de Firestore.
+
+Si la aplicación ya está desplegada, también hay que generar un nuevo deployment de Vercel para incorporar los archivos de la entrega.
+
 ## Despliegue en Vercel
 
 1. Subí el proyecto a un repositorio Git privado (sin `.env`).

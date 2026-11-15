@@ -794,7 +794,7 @@ function manejarClickPanelAdministracion(evento) {
 
 async function crearCategoriaDesdeAdministracion(evento) {
   evento.preventDefault();
-  const formulario = evento.currentTarget;
+  const formulario = evento.target;
   const valores = new FormData(formulario);
   try {
     mostrarCarga('Creando categoría…');

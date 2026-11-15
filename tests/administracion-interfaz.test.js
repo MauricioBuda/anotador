@@ -107,7 +107,7 @@ test('las reglas impiden agregar registros mientras una categoría se elimina de
   assert.match(rules, /match \/categoriasEliminadasDefinitivamente\/\{categoriaId\}/);
   assert.match(rules, /function categoriaDisponible\(categoriaId\)/);
   assert.match(rules, /existsAfter\(rutaCategoria\)/);
-  assert.match(rules, /getAfter\(rutaCategoria\)\.data\.eliminandoDefinitivamente != true/);
+  assert.match(rules, /getAfter\(rutaCategoria\)\.data\.get\('eliminandoDefinitivamente',\s*false\) != true/);
   assert.match(rules, /allow create, update: if usuarioAutorizado\(\)\s*&& categoriaDisponible\(request\.resource\.data\.categoriaId\)/);
 });
 
