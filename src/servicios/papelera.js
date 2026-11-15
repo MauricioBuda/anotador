@@ -86,8 +86,10 @@ export async function restaurarDato(registro) {
       observacion: datosActuales.observacion || '',
       creadoEn: datosActuales.creadoEn,
       creadoPor: datosActuales.creadoPor,
+      creadoPorCorreo: datosActuales.creadoPorCorreo || '',
       editadoEn: datosActuales.editadoEn || null,
       editadoPor: datosActuales.editadoPor || null,
+      editadoPorCorreo: datosActuales.editadoPorCorreo || null,
     });
     transaccion.delete(referenciaPapelera);
   });

@@ -85,6 +85,8 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .campo-busqueda input:focus { outline: none; }
 .boton-icono-chico { width: 31px; height: 31px; }
 .resultados-busqueda { max-height: 310px; overflow: auto; margin-top: 8px; border-top: 1px solid #f0e8e0; }
+.cantidad-resultados-busqueda { padding: 9px 7px 3px; color: var(--texto-suave); font-size: 10px; font-weight: 700; }
+.coincidencia-busqueda { padding: 0 2px; border-radius: 3px; color: var(--tierra-oscuro); background: #f6dfe5; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .resultado-busqueda { width: 100%; display: flex; align-items: center; gap: 11px; padding: 11px 7px; border: 0; border-bottom: 1px solid #f2ebe4; background: transparent; text-align: left; cursor: pointer; }
 .resultado-busqueda:hover { background: #fcf6f2; }
 .resultado-icono { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; color: var(--tierra); background: var(--superficie-secundaria); }
@@ -149,6 +151,20 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .encabezado-lista h2 { margin: 0; color: var(--tierra-oscuro); font-family: Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 600; }
 .cantidad-registros { padding: 6px 9px; border-radius: 30px; color: var(--rosado-oscuro); background: var(--rosado-suave); font-size: 10px; font-weight: 700; }
 .lista-registros { display: grid; gap: 8px; }
+.boton-categoria-favoritos .icono-categoria { color: var(--rosado-oscuro); background: var(--rosado-suave); }
+.boton-categoria-favoritos.seleccionada .icono-categoria { color: var(--rosado-oscuro); background: #f2dfe5; }
+.estrella-encabezado { width: 17px; height: 17px; margin-right: 5px; vertical-align: -2px; color: var(--rosado-oscuro); fill: currentColor; }
+.lista-favoritos { gap: 8px; }
+.lista-favoritos .fila-dato { background: #fffefd; }
+.encabezado-lista-favoritos h2 { display: flex; align-items: center; color: var(--tierra-oscuro); }
+.estado-vacio-favoritos .estado-icono { color: var(--rosado-oscuro); background: var(--rosado-suave); }
+.encabezado-identificacion-dato { min-width: 0; display: block; line-height: 1.45; }
+.encabezado-identificacion-dato > strong { color: var(--tierra-oscuro); font-size: 12px; overflow-wrap: anywhere; white-space: normal; }
+.boton-favorito { width: 20px; height: 20px; margin: 0 0 0 4px; padding: 0; border-radius: 6px; vertical-align: middle; }
+.boton-favorito svg { width: 14px; height: 14px; }
+.boton-favorito.favorito-activo { color: var(--rosado-oscuro); background: #fbf0f3; }
+.boton-favorito.favorito-activo svg path { fill: currentColor; }
+.categoria-del-favorito { display: block; margin-top: 2px; color: var(--rosado-oscuro); font-size: 9px; }
 .fila-dato { display: grid; grid-template-columns: minmax(180px, 1.05fr) minmax(150px, 1fr) minmax(120px, .8fr) auto; align-items: center; gap: 12px; padding: 12px 13px; border: 1px solid #eee4dc; border-radius: 12px; background: #fff; }
 .fila-dato.sin-observacion { grid-template-columns: minmax(180px, 1.05fr) minmax(150px, 1fr) auto; }
 .identificacion-dato { min-width: 0; display: grid; gap: 5px; }
@@ -156,13 +172,18 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .fecha-registro { width: fit-content; position: relative; display: inline-flex; align-items: center; gap: 5px; color: #a18f83; font-size: 9px; }
 .fecha-registro svg { width: 12px; height: 12px; }
 .fecha-registro.tiene-edicion { cursor: help; }
-.tooltip-edicion { position: absolute; z-index: 5; left: 0; bottom: calc(100% + 9px); display: none; width: max-content; max-width: 240px; padding: 8px 10px; border: 1px solid #e3d1d4; border-radius: 8px; color: #fffaf8; background: #6d5148; box-shadow: 0 8px 18px rgba(53, 35, 27, .14); font-size: 10px; white-space: normal; }
-.fecha-registro.tiene-edicion:hover .tooltip-edicion, .fecha-registro.tiene-edicion:focus .tooltip-edicion, .fecha-registro.tiene-edicion.tooltip-visible .tooltip-edicion { display: block; }
+.tooltip-edicion { position: absolute; z-index: 5; left: 0; bottom: calc(100% + 9px); display: none; width: max-content; max-width: 260px; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid #e3d1d4; border-radius: 8px; color: #fffaf8; background: #6d5148; box-shadow: 0 8px 18px rgba(53, 35, 27, .14); font-size: 10px; line-height: 1.45; white-space: normal; }
+.fecha-registro.tiene-edicion:hover .tooltip-edicion, .fecha-registro.tiene-edicion:focus .tooltip-edicion, .fecha-registro.tiene-edicion.tooltip-visible .tooltip-edicion { display: flex; }
 .valor-dato { min-width: 0; overflow: hidden; }
 .texto-dato { display: block; overflow-wrap: anywhere; color: var(--texto); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
 .dato-oculto { color: #8e7e74; letter-spacing: .08em; white-space: nowrap; }
 .dato-revelado { max-height: 90px; overflow: auto; }
+.envoltorio-observacion { min-width: 0; display: grid; justify-items: start; gap: 4px; }
 .observacion-dato { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--texto-suave); font-size: 10px; line-height: 1.45; white-space: pre-wrap; }
+.observacion-dato:not(.observacion-expandida) { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.observacion-dato.observacion-expandida { display: block; }
+.boton-ver-observacion { padding: 0; border: 0; color: var(--rosado-oscuro); background: transparent; font-size: 9px; font-weight: 700; cursor: pointer; }
+.boton-ver-observacion:hover { text-decoration: underline; }
 .acciones-dato { display: flex; align-items: center; gap: 1px; }
 .boton-accion-dato { width: 32px; height: 32px; border-radius: 9px; }
 .boton-accion-dato svg { width: 16px; height: 16px; }
@@ -342,13 +363,20 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .lista-registros { gap: 6px; }
   .fila-dato, .fila-dato.sin-observacion { grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px; padding: 8px 9px; border-radius: 10px; }
   .identificacion-dato { grid-column: 1; grid-row: 1; gap: 3px; }
-  .identificacion-dato > strong { font-size: 11px; }
+  .encabezado-identificacion-dato > strong { font-size: 11px; }
+  .boton-favorito { width: 19px; height: 19px; margin-left: 3px; }
+  .boton-favorito svg { width: 13px; height: 13px; }
+  .categoria-del-favorito { font-size: 8px; }
   .fecha-registro { font-size: 8px; }
   .fecha-registro svg { width: 10px; height: 10px; }
   .valor-dato { grid-column: 1; grid-row: 2; padding: 2px 0; }
   .texto-dato { font-size: 11px; line-height: 1.4; }
   .dato-revelado { max-height: 76px; }
-  .observacion-dato { grid-column: 1 / -1; grid-row: 3; font-size: 9px; line-height: 1.35; }
+  .envoltorio-observacion { grid-column: 1 / -1; grid-row: 3; }
+  .observacion-dato { font-size: 9px; line-height: 1.35; }
+  .boton-ver-observacion { font-size: 8px; }
+  .lista-favoritos { gap: 6px; }
+  .encabezado-lista-favoritos h2 { font-size: 19px; }
   .acciones-dato { grid-column: 2; grid-row: 1 / span 2; align-self: center; gap: 0; }
   .boton-accion-dato { width: 28px; height: 29px; }
   .boton-accion-dato svg { width: 15px; height: 15px; }

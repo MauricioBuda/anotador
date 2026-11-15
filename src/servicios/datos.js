@@ -36,8 +36,10 @@ export async function crearDato({ categoriaId, nombre, dato, observacion, usuari
     ...valores,
     creadoEn: serverTimestamp(),
     creadoPor: usuario.uid,
+    creadoPorCorreo: usuario.email || '',
     editadoEn: null,
     editadoPor: null,
+    editadoPorCorreo: null,
   });
   return referencia.id;
 }
@@ -86,8 +88,10 @@ export async function crearDatoConCategoriaNueva({ nombreCategoria, icono, nombr
       ...valoresDato,
       creadoEn: serverTimestamp(),
       creadoPor: usuario.uid,
+      creadoPorCorreo: usuario.email || '',
       editadoEn: null,
       editadoPor: null,
+      editadoPorCorreo: null,
     });
   });
   return { categoriaId, datoId: referenciaDato.id };
@@ -100,5 +104,6 @@ export async function actualizarDato(id, { categoriaId, nombre, dato, observacio
     ...valores,
     editadoEn: serverTimestamp(),
     editadoPor: usuario.uid,
+    editadoPorCorreo: usuario.email || '',
   });
 }

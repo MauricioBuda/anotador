@@ -96,3 +96,61 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 6. Confirmar que las categorías marcadas temporalmente con `eliminandoDefinitivamente: true` no aceptan registros nuevos ni cambios de categoría.
 
 La prueba manual con Firebase real es necesaria; las pruebas automáticas del repositorio verifican el contenido de las reglas, pero no sustituyen al emulador o a una prueba contra el proyecto real.
+
+
+## Etapa 1.7 — favoritos, autoría, categoría recordada, observaciones y búsqueda
+
+**Antes de probar:** publicar el nuevo `firestore.rules`. La regla nueva habilita la subcolección de favoritos privada por UID; no requiere configurar índices compuestos ni activar facturación.
+
+### Favoritos personales
+- [ ] Iniciar sesión y marcar un registro con la estrella.
+- [ ] Comprobar que aparece en la carpeta Favoritos (el comportamiento de bloque superior de la etapa 1.7 fue reemplazado en la etapa 1.8).
+- [ ] Quitar el favorito desde la carpeta Favoritos y comprobar que desaparece de allí.
+- [ ] Marcarlo desde la categoría y comprobar que la estrella queda activa en ambas vistas.
+- [ ] Ingresar desde otra sesión/navegador con la misma cuenta y comprobar que conserva sus favoritos.
+- [ ] Ingresar con otra cuenta autorizada y comprobar que no ve la lista personal de favoritos de la primera.
+- [ ] Mover un registro favorito a la papelera y restaurarlo; comprobar que conserva su favorito personal.
+
+### Autoría y modificación
+- [ ] Crear un registro y tocar la fecha: debe mostrar el correo de quien lo creó.
+- [ ] Editar ese registro con otra cuenta y tocar la fecha: debe mostrar fecha y correo de quien hizo la última modificación.
+- [ ] Comprobar que la fecha original de creación no cambia.
+- [ ] Verificar que un registro antiguo sin correo guardado no invente un autor: debe indicar que no está disponible, salvo que el UID corresponda a la cuenta actual.
+- [ ] Enviar un registro a papelera y restaurarlo; comprobar que se conservan los datos de creación y última edición.
+
+### Última categoría utilizada
+- [ ] Seleccionar una categoría en «Nuevo dato», guardar un registro y cerrar el formulario.
+- [ ] Volver a abrir «Nuevo dato» y comprobar que la categoría se precarga.
+- [ ] Cambiar de cuenta en el mismo navegador y comprobar que la preferencia queda separada por UID.
+- [ ] Probar en otro navegador/dispositivo: la preferencia comienza vacía, porque se guarda localmente y no en Firestore.
+- [ ] Ocultar la última categoría utilizada y comprobar que no se precarga si ya no está disponible para nuevas cargas.
+
+### Observaciones plegables
+- [ ] Crear un registro con una observación larga.
+- [ ] Comprobar que inicialmente se muestran dos líneas y aparece «Ver más».
+- [ ] Expandir y volver a contraer la observación.
+- [ ] Comprobar una observación breve: no debe mostrar el control «Ver más».
+- [ ] Repetir desde la carpeta Favoritos y desde la categoría original; ambos lugares deben conservar el mismo estado expandido/contraído.
+
+### Búsqueda mejorada
+- [ ] Buscar un fragmento del nombre y comprobar que aparece resaltado.
+- [ ] Buscar una categoría y comprobar que su nombre aparece resaltado.
+- [ ] Probar con tildes y mayúsculas distintas al texto guardado.
+- [ ] Comprobar el contador singular para un resultado y plural para varios.
+- [ ] Verificar que sigue sin buscar en el contenido del dato ni en la observación.
+- [ ] Probar entradas que incluyan caracteres como `<`, `>`, comillas y ampersand: no deben interpretarse como HTML.
+
+La prueba manual con Firebase real sigue siendo necesaria. Las pruebas automáticas del repositorio no sustituyen una comprobación de permisos contra el proyecto real ni una revisión visual en celular y escritorio.
+
+
+## Etapa 1.8 — carpeta Favoritos
+
+- [ ] Verificar que Favoritos aparezca como botón dentro de «Datos cargados», antes de las categorías normales, con una estrella rosada y contador.
+- [ ] Confirmar que la carpeta aparezca incluso cuando no hay favoritos y muestre un estado vacío claro.
+- [ ] Marcar un registro en una categoría: debe aparecer en la carpeta Favoritos.
+- [ ] Comprobar que dentro de Favoritos se pueda revelar y copiar el dato, expandir observaciones y quitar el favorito con la estrella.
+- [ ] Comprobar que dentro de Favoritos no aparezcan botones para editar ni enviar a papelera.
+- [ ] Abrir la categoría original y verificar que allí sigan disponibles editar y eliminar.
+- [ ] Verificar que, al quitar el favorito desde la carpeta, el registro desaparezca de esa carpeta y siga en su categoría original.
+- [ ] Verificar que la estrella aparezca a pocos píxeles del nombre tanto en escritorio como en celular, incluso con nombres extensos.
+- [ ] Confirmar que los favoritos sigan separados por cuenta y sincronizados entre dispositivos de la misma cuenta.

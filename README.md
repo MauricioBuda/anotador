@@ -140,9 +140,12 @@ Si modificás una variable de entorno en Vercel, necesitás generar un nuevo des
 - Los registros tienen categoría, nombre/identificación, un dato de texto libre y observación opcional.
 - Los datos se ocultan inicialmente con ocho asteriscos. Cada registro se revela por separado.
 - El botón de copiar copia únicamente el campo Dato.
-- La fecha original de creación se conserva al editar. La última edición se muestra en un globo informativo.
+- Cada usuario puede marcar registros como favoritos. «Favoritos» aparece como una carpeta virtual dentro de «Datos cargados», con una estrella rosada. La lista es personal por cuenta y se sincroniza entre dispositivos al iniciar sesión con la misma cuenta.
+- La fecha original de creación se conserva al editar. El globo de información muestra quién creó el registro y, si fue editado, la fecha y el correo de quien realizó la última modificación. Los registros creados antes de esta mejora pueden no tener el correo del autor guardado.
 - Los registros se ordenan por fecha original de creación, más recientes primero.
-- La búsqueda global contempla solamente nombre del registro y nombre de categoría; no busca en el valor del dato ni en la observación.
+- Al abrir «Nuevo dato», se precarga la última categoría usada en ese navegador y dispositivo. Esta preferencia se guarda localmente y no se comparte entre dispositivos.
+- Las observaciones largas se muestran inicialmente en dos líneas y se pueden expandir desde «Ver más».
+- La búsqueda global contempla solamente nombre del registro y nombre de categoría; no busca en el valor del dato ni en la observación. Resalta las coincidencias y muestra la cantidad de resultados.
 - Los registros eliminados pasan a la papelera durante 10 días. Se pueden restaurar o eliminar definitivamente antes del vencimiento.
 - Las categorías eliminadas se archivan y pueden recuperarse desde Administración, sin vencimiento automático.
 - No se implementaron copias de seguridad ni exportaciones, de acuerdo con lo solicitado.
@@ -176,6 +179,7 @@ mi-anotador/
 │   │   ├── autenticacion.js
 │   │   ├── categorias.js
 │   │   ├── datos.js
+│   │   ├── favoritos.js
 │   │   └── papelera.js
 │   ├── interfaz/
 │   │   ├── dialogos.js
@@ -185,8 +189,12 @@ mi-anotador/
 │       ├── iconos.js
 │       └── normalizacion.js
 ├── tests/
-│   ├── validaciones.test.js
-│   └── plantillas.test.js
+│   ├── administracion-interfaz.test.js
+│   ├── carga.test.js
+│   ├── mejoras-productividad.test.js
+│   ├── plantillas.test.js
+│   ├── reglas-firestore.test.js
+│   └── validaciones.test.js
 └── documentacion/
     └── pruebas-manuales.md
 ```
@@ -231,3 +239,30 @@ Si se elimina definitivamente una categoría inicial, queda un marcador interno 
 **Importante:** esta etapa modifica `firestore.rules`. Después de reemplazar los archivos del proyecto, hay que publicar las reglas nuevas desde Firebase Console → Firestore Database → Rules. Hasta publicarlas, la interfaz tendrá la nueva función, pero Firestore no aplicará la protección adicional contra nuevas referencias durante el borrado.
 
 En los formularios de alta, el selector de iconos no inicia con una opción seleccionada. Si no se elige ninguna, se guarda la carpeta genérica. En la edición de una categoría se muestra su icono actual.
+
+
+## Mejoras de productividad — Etapa 1.7
+
+Esta etapa incorpora cinco mejoras sin cambiar la estructura principal de la aplicación:
+
+1. **Favoritos personales:** cada cuenta administra su propia lista en `usuarios/{uid}/favoritos/{datoId}`. Los favoritos se sincronizan entre dispositivos de esa misma cuenta y no se mezclan entre los usuarios de la bóveda compartida.
+2. **Autor y última modificación:** los nuevos registros guardan el correo de quien los creó; las ediciones guardan el correo de quien modificó por última vez. El globo de la fecha presenta esos datos. En registros anteriores a esta etapa puede faltar el correo del autor, por lo que la interfaz muestra «No disponible» cuando no es posible identificarlo con certeza.
+3. **Última categoría utilizada:** se recuerda por cuenta y navegador mediante `localStorage`. No requiere lecturas ni escrituras adicionales en Firestore y no se sincroniza con otros dispositivos.
+4. **Observaciones plegables:** las observaciones extensas o con saltos de línea se limitan inicialmente a dos líneas y ofrecen «Ver más» / «Ver menos».
+5. **Búsqueda visual:** la búsqueda mantiene los mismos campos, resalta la coincidencia (sin distinguir tildes ni mayúsculas) e informa cuántos resultados encontró.
+
+**Importante:** esta etapa modifica `firestore.rules` para permitir que cada usuario lea y administre únicamente sus propios favoritos. Después de reemplazar los archivos, publicar el `firestore.rules` de este ZIP desde Firebase Console → Firestore Database → Rules → Publicar. No se necesita cambiar el proyecto Firebase, las variables de entorno, ni contratar un plan pago.
+
+La corrección manual que debe conservarse para el alta de categorías es `const formulario = evento.target;` en `crearCategoriaDesdeAdministracion`, porque el evento `submit` está delegado desde el panel de administración.
+
+Al actualizar, conservá `.env`, `package-lock.json` y `node_modules`. No reemplaces ni borres los documentos existentes: los nuevos campos de autor se agregan gradualmente cuando se creen o editen registros.
+
+
+## Carpeta Favoritos — Etapa 1.8
+
+- «Favoritos» dejó de mostrarse como un bloque de accesos rápidos separado y pasó a ser una categoría virtual dentro de los botones de «Datos cargados».
+- La carpeta aparece siempre, incluso vacía, con un icono de estrella rosada y un contador personal.
+- Al abrirla, muestra los registros marcados como favoritos ordenados por fecha original de creación. Cada registro indica su categoría de origen.
+- Desde la carpeta Favoritos se puede revelar, copiar y quitar el favorito mediante la estrella. No se muestran acciones de editar ni enviar a papelera. Para editar o eliminar un registro se debe abrir su categoría original.
+- La estrella para marcar/desmarcar quedó inmediatamente después del nombre, sin alineación a un extremo de la tarjeta.
+- La persistencia de favoritos continúa en `usuarios/{uid}/favoritos/{datoId}`. No se modificó el modelo de datos ni las reglas de Firestore de la etapa anterior.

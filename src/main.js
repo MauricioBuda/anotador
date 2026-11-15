@@ -13,6 +13,7 @@ import {
   eliminarCategoriaDefinitivamente,
 } from './servicios/categorias.js';
 import { observarDatos, crearDato, crearDatoConCategoriaNueva, actualizarDato } from './servicios/datos.js';
+import { observarFavoritos, guardarFavorito, quitarFavorito } from './servicios/favoritos.js';
 import { observarPapelera, obtenerFechaVencimiento, eliminarPapeleraVencida, enviarAPapelera, restaurarDato, eliminarDefinitivamente } from './servicios/papelera.js';
 import { normalizarTexto, escaparHTML, formatearFechaArgentina, diasRestantes, compararCategorias, compararCategoriasAdministracion } from './utilidades/normalizacion.js';
 import { renderizarIcono, renderizarSelectorIconos, conectarSelectorIconos, establecerIconoSelector, interpretarValorIcono } from './utilidades/iconos.js';
@@ -24,10 +25,12 @@ import {
   plantillaBotonCategoria,
   plantillaRegistros,
   plantillaResultadosBusqueda,
+  plantillaFavoritos,
   icono,
 } from './interfaz/plantillas.js';
 
 const raiz = document.getElementById('app');
+const CATEGORIA_FAVORITOS_ID = '__favoritos__';
 
 let usuarioActual = null;
 let canceladores = [];
@@ -40,7 +43,10 @@ let formularioAbierto = false;
 let busquedaAbierta = false;
 let textoBusqueda = '';
 let registrosRevelados = new Set();
-let primerSnapshot = { categorias: false, datos: false, papelera: false };
+let observacionesExpandidas = new Set();
+let favoritos = new Set();
+let ultimaCategoriaId = '';
+let primerSnapshot = { categorias: false, datos: false, papelera: false, favoritos: false };
 let bloqueoInicialActivo = false;
 let pestanaAdministracionActual = 'categorias';
 let formularioCategoriaAdminAbierto = false;
@@ -86,7 +92,37 @@ function mostrarLogin(error = '') {
 function detenerObservadores() {
   canceladores.forEach((cancelar) => cancelar?.());
   canceladores = [];
-  primerSnapshot = { categorias: false, datos: false, papelera: false };
+  primerSnapshot = { categorias: false, datos: false, papelera: false, favoritos: false };
+}
+
+function claveUltimaCategoria(usuarioId) {
+  return `mi-anotador:ultima-categoria:${usuarioId}`;
+}
+
+function leerUltimaCategoria(usuarioId) {
+  try {
+    return window.localStorage.getItem(claveUltimaCategoria(usuarioId)) || '';
+  } catch (error) {
+    console.warn('No se pudo recuperar la última categoría utilizada:', error);
+    return '';
+  }
+}
+
+function guardarUltimaCategoria(categoriaId) {
+  if (!usuarioActual?.uid || !categoriaId) return;
+  ultimaCategoriaId = categoriaId;
+  try {
+    window.localStorage.setItem(claveUltimaCategoria(usuarioActual.uid), categoriaId);
+  } catch (error) {
+    console.warn('No se pudo recordar la última categoría utilizada:', error);
+  }
+}
+
+function aplicarUltimaCategoriaEnFormulario() {
+  const selector = document.getElementById('categoria-nuevo-dato');
+  if (!selector || selector.value) return;
+  const existeOpcion = [...selector.options].some((opcion) => opcion.value === ultimaCategoriaId);
+  if (existeOpcion) selector.value = ultimaCategoriaId;
 }
 
 function mostrarAplicacion(usuario) {
@@ -96,11 +132,14 @@ function mostrarAplicacion(usuario) {
   papelera = [];
   categoriaSeleccionada = null;
   registrosRevelados.clear();
+  observacionesExpandidas.clear();
+  favoritos = new Set();
+  ultimaCategoriaId = leerUltimaCategoria(usuario.uid);
   datosAbiertos = true;
   formularioAbierto = false;
   busquedaAbierta = false;
   textoBusqueda = '';
-  primerSnapshot = { categorias: false, datos: false, papelera: false };
+  primerSnapshot = { categorias: false, datos: false, papelera: false, favoritos: false };
   bloqueoInicialActivo = true;
 
   raiz.innerHTML = plantillaAplicacion(usuario);
@@ -157,6 +196,12 @@ function mostrarAplicacion(usuario) {
         primerSnapshot.papelera = true;
         renderizarEstadoInterfaz();
         if (document.querySelector('.modal-administracion')) renderizarModalAdministracion(pestanaAdministracionActual);
+        resolverPrimeraCarga();
+      }, manejarError),
+      observarFavoritos(usuario.uid, (resultado) => {
+        favoritos = resultado;
+        primerSnapshot.favoritos = true;
+        renderizarEstadoInterfaz();
         resolverPrimeraCarga();
       }, manejarError),
     ];
@@ -216,10 +261,16 @@ function conectarEventosAplicacion() {
   document.getElementById('formulario-nuevo-dato')?.addEventListener('submit', guardarNuevoDato);
   document.getElementById('categoria-nuevo-dato')?.addEventListener('change', (evento) => {
     const campoNuevo = document.getElementById('campo-categoria-nueva');
-    const crearNueva = evento.target.value === '__agregar_categoria__';
+    const valorElegido = evento.target.value;
+    const crearNueva = valorElegido === '__agregar_categoria__';
     campoNuevo?.classList.toggle('oculto', !crearNueva);
     document.getElementById('nombre-categoria-nueva')?.toggleAttribute('required', crearNueva);
-    if (crearNueva) document.getElementById('nombre-categoria-nueva')?.focus();
+    if (crearNueva) {
+      document.getElementById('nombre-categoria-nueva')?.focus();
+      return;
+    }
+    const categoriaDisponible = categorias.some((categoria) => categoria.id === valorElegido && categoria.activa && categoria.visibleEnFormulario);
+    if (categoriaDisponible) guardarUltimaCategoria(valorElegido);
   });
 }
 
@@ -234,7 +285,10 @@ function manejarClickAplicacion(evento) {
     const tipo = botonAcordeon.dataset.acordeon;
     if (tipo === 'formulario') {
       formularioAbierto = !formularioAbierto;
-      if (formularioAbierto) registrosRevelados.clear();
+      if (formularioAbierto) {
+        registrosRevelados.clear();
+        aplicarUltimaCategoriaEnFormulario();
+      }
     } else {
       datosAbiertos = !datosAbiertos;
       if (!datosAbiertos) {
@@ -251,6 +305,7 @@ function manejarClickAplicacion(evento) {
     const id = botonCategoria.dataset.categoria;
     categoriaSeleccionada = categoriaSeleccionada === id ? null : id;
     registrosRevelados.clear();
+    observacionesExpandidas.clear();
     renderizarEstadoInterfaz();
     return;
   }
@@ -261,6 +316,7 @@ function manejarClickAplicacion(evento) {
     if (!registro) return;
     categoriaSeleccionada = registro.categoriaId;
     registrosRevelados.clear();
+    observacionesExpandidas.clear();
     datosAbiertos = true;
     busquedaAbierta = false;
     textoBusqueda = '';
@@ -313,8 +369,14 @@ async function guardarNuevoDato(evento) {
       });
     } else {
       await crearDato({ ...datosNuevoRegistro, categoriaId: categoriaIdSeleccionada });
+      const categoriaUsada = categorias.find((categoria) => categoria.id === categoriaIdSeleccionada && categoria.activa && categoria.visibleEnFormulario);
+      if (categoriaUsada) guardarUltimaCategoria(categoriaIdSeleccionada);
     }
     formulario.reset();
+    const selectorCategoria = document.getElementById('categoria-nuevo-dato');
+    if (selectorCategoria && [...selectorCategoria.options].some((opcion) => opcion.value === ultimaCategoriaId)) {
+      selectorCategoria.value = ultimaCategoriaId;
+    }
     const campoNuevo = document.getElementById('campo-categoria-nueva');
     campoNuevo?.classList.add('oculto');
     document.getElementById('nombre-categoria-nueva')?.removeAttribute('required');
@@ -331,11 +393,21 @@ function ejecutarAccionDato(accion, registro) {
   if (accion === 'revelar') {
     if (registrosRevelados.has(registro.id)) registrosRevelados.delete(registro.id);
     else registrosRevelados.add(registro.id);
-    renderizarContenidoCategoria();
+      renderizarContenidoCategoria();
     return;
   }
   if (accion === 'copiar') {
     copiarDato(registro.dato);
+    return;
+  }
+  if (accion === 'favorito') {
+    alternarFavorito(registro);
+    return;
+  }
+  if (accion === 'observacion') {
+    if (observacionesExpandidas.has(registro.id)) observacionesExpandidas.delete(registro.id);
+    else observacionesExpandidas.add(registro.id);
+    renderizarContenidoCategoria();
     return;
   }
   if (accion === 'editar') {
@@ -485,7 +557,8 @@ function renderizarSelectorCategorias() {
   )).join('');
   selector.innerHTML = `<option value="">Seleccionar categoría</option>${opciones}<option value="__agregar_categoria__">＋ Agregar categoría</option>`;
   if ([...selector.options].some((opcion) => opcion.value === valorActual)) selector.value = valorActual;
-
+  else if ([...selector.options].some((opcion) => opcion.value === ultimaCategoriaId)) selector.value = ultimaCategoriaId;
+  else selector.value = '';
 }
 
 function categoriasParaPantalla() {
@@ -502,8 +575,16 @@ function categoriaNombre(categoria) {
 function renderizarBotonesCategorias() {
   const contenedor = document.getElementById('botones-categorias');
   if (!contenedor) return;
+  const categoriaFavoritos = {
+    id: CATEGORIA_FAVORITOS_ID,
+    nombre: 'Favoritos',
+    icono: { tipo: 'vector', valor: 'star' },
+    esFavoritos: true,
+  };
+  const cantidadFavoritos = datos.filter((registro) => favoritos.has(registro.id)).length;
+  const botonFavoritos = plantillaBotonCategoria(categoriaFavoritos, cantidadFavoritos, categoriaSeleccionada === CATEGORIA_FAVORITOS_ID);
   const lista = categoriasParaPantalla();
-  contenedor.innerHTML = lista.map((categoria) => {
+  contenedor.innerHTML = botonFavoritos + lista.map((categoria) => {
     const cantidad = datos.filter((registro) => registro.categoriaId === categoria.id).length;
     return plantillaBotonCategoria(categoria, cantidad, categoriaSeleccionada === categoria.id);
   }).join('') + `<button class="boton-categoria boton-nueva-categoria" type="button" data-crear-categoria aria-label="Crear nueva categoría"><span class="icono-categoria">${icono('plus')}</span><span class="texto-categoria">Nueva categoría</span></button>`;
@@ -516,6 +597,21 @@ function renderizarContenidoCategoria() {
     contenedor.innerHTML = `<div class="estado-sin-seleccion"><span class="estado-icono">${icono('folder')}</span><p>Seleccioná una categoría para consultar sus datos.</p></div>`;
     return;
   }
+  if (categoriaSeleccionada === CATEGORIA_FAVORITOS_ID) {
+    const registrosFavoritos = datos
+      .filter((registro) => favoritos.has(registro.id))
+      .sort((a, b) => fechaEnMilisegundos(b.creadoEn) - fechaEnMilisegundos(a.creadoEn));
+    contenedor.innerHTML = plantillaFavoritos({
+      registros: registrosFavoritos,
+      categorias,
+      revelados: registrosRevelados,
+      favoritos,
+      observacionesExpandidas,
+      usuario: usuarioActual,
+    });
+    return;
+  }
+
   const categoria = categorias.find((item) => item.id === categoriaSeleccionada);
   if (!categoria) {
     categoriaSeleccionada = null;
@@ -525,7 +621,26 @@ function renderizarContenidoCategoria() {
   const registros = datos
     .filter((registro) => registro.categoriaId === categoriaSeleccionada)
     .sort((a, b) => fechaEnMilisegundos(b.creadoEn) - fechaEnMilisegundos(a.creadoEn));
-  contenedor.innerHTML = plantillaRegistros({ categoria, registros, revelados: registrosRevelados });
+  contenedor.innerHTML = plantillaRegistros({
+    categoria,
+    registros,
+    revelados: registrosRevelados,
+    favoritos,
+    observacionesExpandidas,
+    usuario: usuarioActual,
+  });
+}
+
+async function alternarFavorito(registro) {
+  try {
+    mostrarCarga(favoritos.has(registro.id) ? 'Quitando de favoritos…' : 'Agregando a favoritos…');
+    if (favoritos.has(registro.id)) await quitarFavorito(usuarioActual.uid, registro.id);
+    else await guardarFavorito(usuarioActual.uid, registro.id);
+  } catch (error) {
+    mostrarNotificacion(mensajeError(error), 'error');
+  } finally {
+    ocultarCarga();
+  }
 }
 
 function fechaEnMilisegundos(valor) {
@@ -548,7 +663,7 @@ function renderizarBusqueda() {
     const categoria = categorias.find((item) => item.id === registro.categoriaId);
     return normalizarTexto(registro.nombre).includes(termino) || normalizarTexto(categoria?.nombre || '').includes(termino);
   }).sort((a, b) => fechaEnMilisegundos(b.creadoEn) - fechaEnMilisegundos(a.creadoEn));
-  contenedor.innerHTML = plantillaResultadosBusqueda(coincidencias, categorias);
+  contenedor.innerHTML = plantillaResultadosBusqueda(coincidencias, categorias, textoBusqueda);
 }
 
 function abrirAdministracion(pestana = 'categorias', abrirFormularioNuevaCategoria = false) {
@@ -996,6 +1111,13 @@ async function ejecutarAccionPapelera(accion, id) {
     try {
       mostrarCarga('Eliminando definitivamente…');
       await eliminarDefinitivamente(id);
+      if (favoritos.has(id)) {
+        try {
+          await quitarFavorito(usuarioActual.uid, id);
+        } catch (errorFavorito) {
+          console.warn('El registro se eliminó, pero no se pudo limpiar su favorito personal:', errorFavorito);
+        }
+      }
       mostrarNotificacion('El dato se eliminó definitivamente.');
       renderizarModalAdministracion('papelera');
     } catch (error) {

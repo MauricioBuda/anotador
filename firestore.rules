@@ -33,6 +33,17 @@ service cloud.firestore {
       allow read, write: if usuarioAutorizado();
     }
 
+    // Cada usuario conserva sus propios favoritos dentro de la bóveda compartida.
+    // No se mezclan las listas personales de favoritos entre cuentas.
+    match /usuarios/{usuarioId}/favoritos/{datoId} {
+      allow read, delete: if usuarioAutorizado()
+        && request.auth.uid == usuarioId;
+      allow create, update: if usuarioAutorizado()
+        && request.auth.uid == usuarioId
+        && request.resource.data.keys().hasOnly(['datoId', 'marcadoEn'])
+        && request.resource.data.datoId == datoId;
+    }
+
     match /datos/{datoId} {
       allow read: if usuarioAutorizado();
       allow create, update: if usuarioAutorizado()

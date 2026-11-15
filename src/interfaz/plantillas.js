@@ -1,4 +1,4 @@
-import { escaparHTML, formatearFechaArgentina } from '../utilidades/normalizacion.js';
+import { escaparHTML, formatearFechaArgentina, normalizarTexto } from '../utilidades/normalizacion.js';
 import { renderizarIcono, renderizarSelectorIconos } from '../utilidades/iconos.js';
 
 export function plantillaLogin({ correoNoAutorizado = '' } = {}) {
@@ -77,40 +77,118 @@ export function plantillaAplicacion(usuario) {
 }
 
 export function plantillaBotonCategoria(categoria, cantidad, seleccionada) {
-  return `<button class="boton-categoria ${seleccionada ? 'seleccionada' : ''}" type="button" data-categoria="${escaparHTML(categoria.id)}" aria-pressed="${seleccionada ? 'true' : 'false'}">
+  const claseEspecial = categoria.esFavoritos ? ' boton-categoria-favoritos' : '';
+  return `<button class="boton-categoria${claseEspecial} ${seleccionada ? 'seleccionada' : ''}" type="button" data-categoria="${escaparHTML(categoria.id)}" aria-pressed="${seleccionada ? 'true' : 'false'}">
     <span class="icono-categoria">${renderizarIcono(categoria.icono)}</span><span class="texto-categoria">${escaparHTML(categoria.nombre)}</span><span class="contador-categoria">${cantidad}</span>
   </button>`;
 }
 
-export function plantillaRegistros({ categoria, registros, revelados }) {
+export function plantillaRegistros({ categoria, registros, revelados, favoritos = new Set(), observacionesExpandidas = new Set(), usuario = null }) {
   if (!registros.length) {
     return `<div class="estado-vacio-categoria"><span class="estado-icono">${renderizarIcono(categoria.icono)}</span><strong>Aún no hay datos en esta categoría</strong><span>Cuando agregues información, va a aparecer acá.</span></div>`;
   }
   return `<div class="encabezado-lista"><div><p class="sobretitulo">CATEGORÍA</p><h2>${escaparHTML(categoria.nombre)}</h2></div><span class="cantidad-registros">${registros.length} ${registros.length === 1 ? 'dato' : 'datos'}</span></div>
-    <div class="lista-registros">${registros.map((registro) => plantillaRegistro(registro, revelados.has(registro.id))).join('')}</div>`;
+    <div class="lista-registros">${registros.map((registro) => plantillaRegistro(registro, {
+      revelado: revelados.has(registro.id),
+      favorito: favoritos.has(registro.id),
+      observacionExpandida: observacionesExpandidas.has(registro.id),
+      usuario,
+    })).join('')}</div>`;
 }
 
-function plantillaRegistro(registro, revelado) {
+export function plantillaFavoritos({ registros, categorias, revelados, favoritos, observacionesExpandidas, usuario }) {
+  const encabezado = `<div class="encabezado-lista encabezado-lista-favoritos"><div><p class="sobretitulo">CARPETA</p><h2>${icono('star', 'estrella-encabezado')} Favoritos</h2></div><span class="cantidad-registros">${registros.length} ${registros.length === 1 ? 'dato' : 'datos'}</span></div>`;
+  if (!registros.length) {
+    return `${encabezado}<div class="estado-vacio-categoria estado-vacio-favoritos"><span class="estado-icono">${icono('star', 'estrella-encabezado')}</span><strong>Aún no hay favoritos</strong><span>Marcá un dato con la estrella para guardarlo en esta carpeta.</span></div>`;
+  }
+  return `${encabezado}<div class="lista-registros lista-favoritos">${registros.map((registro) => plantillaRegistro(registro, {
+    revelado: revelados.has(registro.id),
+    favorito: favoritos.has(registro.id),
+    observacionExpandida: observacionesExpandidas.has(registro.id),
+    usuario,
+    categoria: categorias.find((item) => item.id === registro.categoriaId)?.nombre || 'Categoría no disponible',
+    modoFavoritos: true,
+  })).join('')}</div>`;
+}
+
+function plantillaRegistro(registro, { revelado, favorito, observacionExpandida, usuario, categoria = '', modoFavoritos = false }) {
   const creado = formatearFechaArgentina(registro.creadoEn);
   const editado = registro.editadoEn ? formatearFechaArgentina(registro.editadoEn) : '';
-  return `<article class="fila-dato ${registro.observacion ? '' : 'sin-observacion'}" data-registro="${escaparHTML(registro.id)}">
-    <div class="identificacion-dato"><strong>${escaparHTML(registro.nombre)}</strong><span class="fecha-registro ${editado ? 'tiene-edicion' : ''}" ${editado ? `tabindex="0" role="button" data-accion="tooltip" aria-label="Creado ${escaparHTML(creado)}. Editado en ${escaparHTML(editado)}"` : ''}>${icono('clock')}<span>${escaparHTML(creado)}</span>${editado ? `<span class="tooltip-edicion">Editado en ${escaparHTML(editado)}</span>` : ''}</span></div>
+  const creador = registro.creadoPorCorreo
+    || (registro.creadoPor && registro.creadoPor === usuario?.uid ? usuario?.email : '')
+    || 'No disponible';
+  const editor = registro.editadoPorCorreo
+    || (registro.editadoPor && registro.editadoPor === usuario?.uid ? usuario?.email : '')
+    || 'No disponible';
+  const observacion = String(registro.observacion || '');
+  const observacionLarga = observacion.length > 80 || observacion.includes('\n');
+  const tooltip = `<span class="tooltip-edicion"><span>Creado por: ${escaparHTML(creador)}</span>${editado ? `<span>Editado en ${escaparHTML(editado)}</span><span>Editado por: ${escaparHTML(editor)}</span>` : ''}</span>`;
+  const tieneTooltip = Boolean(registro.creadoPorCorreo || registro.editadoEn || registro.creadoPor);
+  return `<article class="fila-dato ${observacion ? '' : 'sin-observacion'} ${favorito ? 'dato-favorito' : ''}" data-registro="${escaparHTML(registro.id)}">
+    <div class="identificacion-dato">
+      <div class="encabezado-identificacion-dato">
+        <strong>${escaparHTML(registro.nombre)}</strong>
+        <button class="boton-icono boton-favorito ${favorito ? 'favorito-activo' : ''}" type="button" data-accion="favorito" aria-label="${favorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}" title="${favorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}">${icono('star', favorito ? 'estrella-activa' : '')}</button>
+      </div>
+      ${categoria ? `<small class="categoria-del-favorito">${escaparHTML(categoria)}</small>` : ''}
+      <span class="fecha-registro ${tieneTooltip ? 'tiene-edicion' : ''}" ${tieneTooltip ? `tabindex="0" role="button" data-accion="tooltip" aria-label="Creado ${escaparHTML(creado)}. ${escaparHTML(tooltip.replace(/<[^>]*>/g, ' '))}"` : ''}>${icono('clock')}<span>${escaparHTML(creado)}</span>${tieneTooltip ? tooltip : ''}</span>
+    </div>
     <div class="valor-dato"><span class="texto-dato ${revelado ? 'dato-revelado' : 'dato-oculto'}">${revelado ? escaparHTML(registro.dato) : '********'}</span></div>
-    ${registro.observacion ? `<p class="observacion-dato">${escaparHTML(registro.observacion)}</p>` : ''}
+    ${observacion ? `<div class="envoltorio-observacion"><p class="observacion-dato ${observacionExpandida ? 'observacion-expandida' : ''}">${escaparHTML(observacion)}</p>${observacionLarga ? `<button class="boton-ver-observacion" type="button" data-accion="observacion">${observacionExpandida ? 'Ver menos' : 'Ver más'}</button>` : ''}</div>` : ''}
     <div class="acciones-dato">
       <button class="boton-icono boton-accion-dato" type="button" data-accion="revelar" aria-label="${revelado ? 'Ocultar dato' : 'Mostrar dato'}" title="${revelado ? 'Ocultar' : 'Mostrar'}">${icono(revelado ? 'eye-off' : 'eye')}</button>
       <button class="boton-icono boton-accion-dato" type="button" data-accion="copiar" aria-label="Copiar dato" title="Copiar">${icono('copy')}</button>
-      <button class="boton-icono boton-accion-dato" type="button" data-accion="editar" aria-label="Editar dato" title="Editar">${icono('pencil')}</button>
-      <button class="boton-icono boton-accion-dato accion-eliminar" type="button" data-accion="eliminar" aria-label="Enviar a papelera" title="Enviar a papelera">${icono('trash-2')}</button>
+      ${modoFavoritos ? '' : `<button class="boton-icono boton-accion-dato" type="button" data-accion="editar" aria-label="Editar dato" title="Editar">${icono('pencil')}</button>
+      <button class="boton-icono boton-accion-dato accion-eliminar" type="button" data-accion="eliminar" aria-label="Enviar a papelera" title="Enviar a papelera">${icono('trash-2')}</button>`}
     </div>
   </article>`;
 }
 
-export function plantillaResultadosBusqueda(resultados, categorias) {
+export function resaltarCoincidencia(texto, termino) {
+  const original = String(texto ?? '');
+  const busqueda = normalizarTexto(termino);
+  if (!busqueda) return escaparHTML(original);
+
+  let normalizado = '';
+  const posiciones = [];
+  let desplazamientoOriginal = 0;
+  for (const caracter of original) {
+    const inicio = desplazamientoOriginal;
+    const fin = inicio + caracter.length;
+    desplazamientoOriginal = fin;
+    if (/^\s+$/u.test(caracter)) {
+      if (normalizado && !normalizado.endsWith(' ')) {
+        normalizado += ' ';
+        posiciones.push({ inicio, fin });
+      }
+      continue;
+    }
+    const reducido = caracter.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-AR');
+    for (let indice = 0; indice < reducido.length; indice += 1) {
+      normalizado += reducido[indice];
+      posiciones.push({ inicio, fin });
+    }
+  }
+  if (normalizado.endsWith(' ')) {
+    normalizado = normalizado.slice(0, -1);
+    posiciones.pop();
+  }
+
+  const posicion = normalizado.indexOf(busqueda);
+  if (posicion < 0) return escaparHTML(original);
+  const primera = posiciones[posicion];
+  const ultima = posiciones[posicion + busqueda.length - 1];
+  if (!primera || !ultima) return escaparHTML(original);
+  return `${escaparHTML(original.slice(0, primera.inicio))}<mark class="coincidencia-busqueda">${escaparHTML(original.slice(primera.inicio, ultima.fin))}</mark>${escaparHTML(original.slice(ultima.fin))}`;
+}
+
+export function plantillaResultadosBusqueda(resultados, categorias, termino = '') {
   if (!resultados.length) return '<p class="sin-resultados">No se encontraron coincidencias.</p>';
-  return resultados.map((registro) => {
+  const resumen = `<div class="cantidad-resultados-busqueda">${resultados.length} ${resultados.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}</div>`;
+  return resumen + resultados.map((registro) => {
     const categoria = categorias.find((item) => item.id === registro.categoriaId);
-    return `<button class="resultado-busqueda" type="button" data-abrir-resultado="${escaparHTML(registro.id)}"><span class="resultado-icono">${renderizarIcono(categoria?.icono)}</span><span><strong>${escaparHTML(registro.nombre)}</strong><small>${escaparHTML(categoria?.nombre || 'Categoría no disponible')}</small></span>${icono('chevron-right')}</button>`;
+    const nombreCategoria = categoria?.nombre || 'Categoría no disponible';
+    return `<button class="resultado-busqueda" type="button" data-abrir-resultado="${escaparHTML(registro.id)}"><span class="resultado-icono">${renderizarIcono(categoria?.icono)}</span><span><strong>${resaltarCoincidencia(registro.nombre, termino)}</strong><small>${resaltarCoincidencia(nombreCategoria, termino)}</small></span>${icono('chevron-right')}</button>`;
   }).join('');
 }
 
@@ -128,6 +206,7 @@ export function icono(nombre, clase = '') {
     'trash-2': '<path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15M10 11v6M14 11v6"/>',
     'refresh-ccw': '<path d="M3 12a9 9 0 0 1 15.4-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.4 6.4L3 16m0 5v-5h5"/>',
     archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 13h4"/>',
+    star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z"/>',
   };
   return `<svg class="icono-interfaz ${clase}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[nombre] || paths.folder}</svg>`;
 }
