@@ -10,6 +10,7 @@ import {
   cambiarVisibilidadCategoria,
   archivarCategoria,
   recuperarCategoria,
+  eliminarCategoriaDefinitivamente,
 } from './servicios/categorias.js';
 import { observarDatos, crearDato, crearDatoConCategoriaNueva, actualizarDato } from './servicios/datos.js';
 import { observarPapelera, obtenerFechaVencimiento, eliminarPapeleraVencida, enviarAPapelera, restaurarDato, eliminarDefinitivamente } from './servicios/papelera.js';
@@ -43,6 +44,7 @@ let primerSnapshot = { categorias: false, datos: false, papelera: false };
 let bloqueoInicialActivo = false;
 let pestanaAdministracionActual = 'categorias';
 let formularioCategoriaAdminAbierto = false;
+let categoriasArchivadasAbiertas = false;
 
 function mostrarConfiguracionPendiente() {
   raiz.innerHTML = `
@@ -316,7 +318,7 @@ async function guardarNuevoDato(evento) {
     const campoNuevo = document.getElementById('campo-categoria-nueva');
     campoNuevo?.classList.add('oculto');
     document.getElementById('nombre-categoria-nueva')?.removeAttribute('required');
-    establecerIconoSelector(raiz, 'iconoCategoriaNueva', 'vector:folder');
+    establecerIconoSelector(raiz, 'iconoCategoriaNueva', '');
     mostrarNotificacion('El dato se guardó correctamente.');
   } catch (error) {
     mostrarNotificacion(mensajeError(error), 'error');
@@ -552,6 +554,7 @@ function renderizarBusqueda() {
 function abrirAdministracion(pestana = 'categorias', abrirFormularioNuevaCategoria = false) {
   registrosRevelados.clear();
   formularioCategoriaAdminAbierto = pestana === 'categorias' && abrirFormularioNuevaCategoria;
+  categoriasArchivadasAbiertas = false;
   renderizarContenidoCategoria();
   renderizarModalAdministracion(pestana);
 }
@@ -642,19 +645,41 @@ function actualizarPestanasAdministracion(contenedor) {
   if (conteoPapelera) conteoPapelera.textContent = String(papelera.length);
 }
 
+function plantillaFilaCategoriaAdministracion(categoria, archivada = false) {
+  return `<article class="fila-administracion-categoria ${archivada ? 'categoria-inactiva' : ''}">
+    <span class="icono-admin-categoria">${renderizarIcono(categoria.icono)}</span>
+    <div class="texto-admin-categoria"><strong>${escaparHTML(categoria.nombre)}</strong><small>${archivada ? 'Eliminada · recuperable' : categoria.visibleEnFormulario ? 'Visible en nuevas cargas' : 'Oculta en nuevas cargas'}</small></div>
+    <div class="acciones-admin-categoria">
+      ${!archivada
+        ? `<button type="button" class="boton-icono" data-admin-accion="visibilidad" data-id="${escaparHTML(categoria.id)}" aria-label="${categoria.visibleEnFormulario ? 'Ocultar' : 'Mostrar'} en formulario" title="${categoria.visibleEnFormulario ? 'Ocultar en formulario' : 'Mostrar en formulario'}">${icono(categoria.visibleEnFormulario ? 'eye' : 'eye-off')}</button><button type="button" class="boton-icono" data-admin-accion="editar" data-id="${escaparHTML(categoria.id)}" aria-label="Editar categoría" title="Editar">${icono('pencil')}</button><button type="button" class="boton-icono accion-eliminar" data-admin-accion="archivar" data-id="${escaparHTML(categoria.id)}" aria-label="Eliminar categoría" title="Eliminar">${icono('trash-2')}</button>`
+        : `<button class="boton boton-secundario boton-chico" type="button" data-admin-accion="recuperar" data-id="${escaparHTML(categoria.id)}">Recuperar</button><button type="button" class="boton-icono accion-eliminar" data-admin-accion="eliminar-definitivamente" data-id="${escaparHTML(categoria.id)}" aria-label="Eliminar categoría definitivamente" title="Eliminar definitivamente">${icono('trash-2')}</button>`}
+    </div>
+  </article>`;
+}
+
 function plantillaListaCategoriasAdministracion() {
-  const listaCategorias = categorias.slice().sort(compararCategoriasAdministracion);
-  if (!listaCategorias.length) return '<p class="sin-resultados">Todavía no hay categorías.</p>';
-  return listaCategorias.map((categoria) => {
-    const archivada = !categoria.activa;
-    return `<article class="fila-administracion-categoria ${archivada ? 'categoria-inactiva' : ''}">
-      <span class="icono-admin-categoria">${renderizarIcono(categoria.icono)}</span>
-      <div class="texto-admin-categoria"><strong>${escaparHTML(categoria.nombre)}</strong><small>${archivada ? 'Eliminada · recuperable' : categoria.visibleEnFormulario ? 'Visible en nuevas cargas' : 'Oculta en nuevas cargas'}</small></div>
-      <div class="acciones-admin-categoria">
-        ${!archivada ? `<button type="button" class="boton-icono" data-admin-accion="visibilidad" data-id="${escaparHTML(categoria.id)}" aria-label="${categoria.visibleEnFormulario ? 'Ocultar' : 'Mostrar'} en formulario" title="${categoria.visibleEnFormulario ? 'Ocultar en formulario' : 'Mostrar en formulario'}">${icono(categoria.visibleEnFormulario ? 'eye' : 'eye-off')}</button><button type="button" class="boton-icono" data-admin-accion="editar" data-id="${escaparHTML(categoria.id)}" aria-label="Editar categoría" title="Editar">${icono('pencil')}</button><button type="button" class="boton-icono accion-eliminar" data-admin-accion="archivar" data-id="${escaparHTML(categoria.id)}" aria-label="Eliminar categoría" title="Eliminar">${icono('trash-2')}</button>` : `<button type="button" class="boton boton-secundario boton-chico" data-admin-accion="recuperar" data-id="${escaparHTML(categoria.id)}">Recuperar</button>`}
+  const activas = categorias.filter((categoria) => categoria.activa).sort(compararCategoriasAdministracion);
+  const archivadas = categorias.filter((categoria) => !categoria.activa).sort(compararCategoriasAdministracion);
+  const listaActivas = activas.length
+    ? activas.map((categoria) => plantillaFilaCategoriaAdministracion(categoria)).join('')
+    : '<p class="sin-resultados">Todavía no hay categorías activas.</p>';
+
+  const bloqueArchivadas = archivadas.length ? `
+    <section class="seccion-categorias-archivadas">
+      <button class="fila-administracion-categoria tarjeta-categorias-archivadas" type="button" data-toggle-categorias-archivadas aria-expanded="${categoriasArchivadasAbiertas}">
+        <span class="icono-admin-categoria">${icono('archive')}</span>
+        <span class="texto-admin-categoria"><strong>Categorías eliminadas</strong><small>${archivadas.length} ${archivadas.length === 1 ? 'categoría' : 'categorías'} recuperables</small></span>
+        <span class="contador-categorias-archivadas">${archivadas.length}</span>
+        <span class="flecha-categorias-archivadas">${icono('chevron-down')}</span>
+      </button>
+      <div class="desplegable-categorias-archivadas ${categoriasArchivadasAbiertas ? 'abierto' : ''}" id="desplegable-categorias-archivadas" aria-hidden="${!categoriasArchivadasAbiertas}">
+        <div class="desplegable-categorias-archivadas-interior">
+          <div class="lista-administracion-categorias lista-categorias-archivadas">${archivadas.map((categoria) => plantillaFilaCategoriaAdministracion(categoria, true)).join('')}</div>
+        </div>
       </div>
-    </article>`;
-  }).join('');
+    </section>` : '';
+
+  return `${listaActivas}${bloqueArchivadas}`;
 }
 
 function plantillaListaPapeleraAdministracion() {
@@ -724,6 +749,16 @@ function actualizarDesplegableNuevaCategoria() {
 }
 
 function manejarClickPanelAdministracion(evento) {
+  const toggleArchivadas = evento.target.closest('[data-toggle-categorias-archivadas]');
+  if (toggleArchivadas) {
+    categoriasArchivadasAbiertas = !categoriasArchivadasAbiertas;
+    const desplegable = document.getElementById('desplegable-categorias-archivadas');
+    desplegable?.classList.toggle('abierto', categoriasArchivadasAbiertas);
+    desplegable?.setAttribute('aria-hidden', String(!categoriasArchivadasAbiertas));
+    toggleArchivadas.setAttribute('aria-expanded', String(categoriasArchivadasAbiertas));
+    return;
+  }
+
   const toggleNueva = evento.target.closest('[data-toggle-nueva-categoria]');
   if (toggleNueva) {
     formularioCategoriaAdminAbierto = !formularioCategoriaAdminAbierto;
@@ -740,7 +775,7 @@ function manejarClickPanelAdministracion(evento) {
     formularioCategoriaAdminAbierto = false;
     const formulario = document.getElementById('formulario-nueva-categoria-admin');
     formulario?.reset();
-    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', 'vector:folder');
+    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', '');
     actualizarDesplegableNuevaCategoria();
     return;
   }
@@ -771,7 +806,7 @@ async function crearCategoriaDesdeAdministracion(evento) {
     });
     formularioCategoriaAdminAbierto = false;
     formulario.reset();
-    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', 'vector:folder');
+    establecerIconoSelector(document.getElementById('panel-contenido-administracion'), 'icono', '');
     actualizarDesplegableNuevaCategoria();
     mostrarNotificacion('La categoría se creó correctamente.');
     renderizarModalAdministracion('categorias');
@@ -825,6 +860,42 @@ async function ejecutarAccionCategoria(accion, id) {
         registrosRevelados.clear();
       }
       mostrarNotificacion('Categoría eliminada. Los registros asociados se conservaron.');
+      renderizarModalAdministracion('categorias');
+    } catch (error) {
+      mostrarNotificacion(mensajeError(error), 'error');
+    } finally {
+      ocultarCarga();
+    }
+    return;
+  }
+
+  if (accion === 'eliminar-definitivamente') {
+    const cantidadActivos = datos.filter((registro) => registro.categoriaId === id).length;
+    const cantidadPapelera = papelera.filter((registro) => registro.categoriaId === id).length;
+    if (cantidadActivos > 0 || cantidadPapelera > 0) {
+      const detalle = [];
+      if (cantidadActivos > 0) detalle.push(`${cantidadActivos} ${cantidadActivos === 1 ? 'registro activo' : 'registros activos'}`);
+      if (cantidadPapelera > 0) detalle.push(`${cantidadPapelera} ${cantidadPapelera === 1 ? 'registro en la papelera' : 'registros en la papelera'}`);
+      mostrarNotificacion(`No se puede eliminar definitivamente «${categoria.nombre}» porque todavía tiene ${detalle.join(' y ')}. Eliminá esos registros definitivamente o reasignalos a otra categoría.`, 'advertencia');
+      return;
+    }
+
+    const confirmado = await confirmarAccion({
+      titulo: 'Eliminar categoría definitivamente',
+      mensaje: `¿Querés eliminar definitivamente «${categoria.nombre}»? Esta acción no se puede deshacer. La categoría solo se eliminará si no tiene registros activos ni en la papelera.`,
+      textoConfirmar: 'Eliminar definitivamente',
+      peligro: true,
+    });
+    if (!confirmado) return;
+
+    try {
+      mostrarCarga('Verificando y eliminando categoría…');
+      await eliminarCategoriaDefinitivamente(id);
+      if (categoriaSeleccionada === id) {
+        categoriaSeleccionada = null;
+        registrosRevelados.clear();
+      }
+      mostrarNotificacion('La categoría se eliminó definitivamente.');
       renderizarModalAdministracion('categorias');
     } catch (error) {
       mostrarNotificacion(mensajeError(error), 'error');

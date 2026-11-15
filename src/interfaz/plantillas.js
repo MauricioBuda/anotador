@@ -14,7 +14,7 @@ export function plantillaLogin({ correoNoAutorizado = '' } = {}) {
           <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.75 7.18l7.73 6C44.42 38.02 46.98 31.86 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.14 1.45-4.88 2.3-8.17 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Ingresar con Google
         </button>
-        <p class="texto-seguridad">Acceso exclusivo para las cuentas autorizadas.</p>
+        <p class="texto-seguridad">Accedé a tu espacio privado.</p>
       </section>
     </main>`;
 }
@@ -55,7 +55,7 @@ export function plantillaAplicacion(usuario) {
               <label class="campo campo-dato"><span>Dato</span><textarea name="dato" rows="3"  required placeholder="Escribí o pegá la información"></textarea></label>
               <label class="campo campo-observacion"><span>Observación <small>(opcional)</small></span><textarea name="observacion" rows="2"  placeholder="Información adicional"></textarea></label>
             </div>
-            <div class="acciones-formulario"><span class="nota-formulario">El dato se guarda de forma compartida para las tres cuentas autorizadas.</span><button class="boton boton-principal" type="submit">Guardar dato</button></div>
+            <div class="acciones-formulario"><span class="nota-formulario">La información queda guardada en tu espacio.</span><button class="boton boton-principal" type="submit">Guardar dato</button></div>
           </form>
           </div>
         </div>

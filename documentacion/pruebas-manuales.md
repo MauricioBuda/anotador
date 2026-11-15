@@ -4,7 +4,7 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 
 ## Acceso
 
-- [ ] Ingresar con cada una de las tres cuentas autorizadas.
+- [ ] Ingresar con cada cuenta autorizada configurada.
 - [ ] Verificar que una cuarta cuenta de Google no pueda ingresar.
 - [ ] Verificar que cerrar sesión vuelva a la pantalla de ingreso.
 - [ ] Verificar que al actualizar la página no aparezca fugazmente el formulario de acceso mientras Firebase restaura la sesión.
@@ -75,3 +75,12 @@ Estas pruebas deben realizarse después de configurar Firebase y publicar las re
 6. Dejar la configuración abierta y, desde otra sesión autorizada, modificar una categoría o un elemento de la papelera. La actualización en tiempo real debe refrescar solo la lista correspondiente, sin cerrar el formulario ni perder el texto que se está escribiendo.
 7. Cerrar y abrir los acordeones principales en escritorio y celular; apertura y cierre deben ser graduales y no deben dejar contenido oculto enfocable.
 8. Repetir las pruebas en un navegador móvil y en escritorio, verificando que el modal tenga desplazamiento interno cuando su contenido supera el espacio disponible.
+
+- [ ] En Administración → Categorías, comprobar que las categorías eliminadas están agrupadas en un desplegable al final.
+- [ ] Recuperar una categoría archivada y comprobar que vuelve a la lista activa.
+- [ ] Intentar eliminar definitivamente una categoría con registros activos: debe impedirlo e indicar el motivo.
+- [ ] Intentar eliminar definitivamente una categoría con registros en papelera: debe impedirlo e indicar el motivo.
+- [ ] Eliminar definitivamente una categoría sin registros asociados y comprobar que desaparece.
+- [ ] Si se elimina definitivamente una categoría inicial, cerrar sesión y volver a ingresar: no debe reaparecer por la inicialización automática.
+- [ ] En una categoría nueva, no elegir icono y comprobar que se guarda con la carpeta genérica.
+- [ ] Comprobar que la interfaz no muestra mensajes sobre la cantidad de cuentas o usuarios habilitados.

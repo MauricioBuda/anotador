@@ -1,6 +1,6 @@
 # Mi anotador
 
-Aplicación web de una sola página para guardar información escrita y compartirla entre tres cuentas de Google autorizadas.
+Aplicación web de una sola página para guardar información escrita en un espacio privado compartido.
 
 ## Tecnologías
 
@@ -75,13 +75,7 @@ Los valores `VITE_` forman parte de la configuración que recibe el navegador; n
 3. En **Authentication → Settings → Authorized domains**, verificá que figure `localhost`.
 4. Después de publicar la aplicación, agregá también el dominio exacto asignado por Vercel.
 
-La aplicación admite únicamente las tres direcciones incluidas en `src/configuracion.js`. La misma lista se encuentra en `firestore.rules`; ambas listas deben mantenerse sincronizadas si en el futuro se cambia algún usuario:
-
-- `mauricio.ariel.buda@gmail.com`
-- `moniacevedo1970@gmail.com`
-- `pablobuda70@gmail.com`
-
-Los tres usuarios tienen los mismos permisos sobre la bóveda compartida. Además, tanto la interfaz como las reglas del servidor exigen que el proveedor de inicio de sesión sea Google.
+La aplicación admite únicamente las direcciones incluidas en `src/configuracion.js`. La misma lista se encuentra en `firestore.rules`; ambas listas deben mantenerse sincronizadas si en el futuro se modifica el acceso. Tanto la interfaz como las reglas del servidor exigen que el proveedor de inicio de sesión sea Google.
 
 ### 4. Cloud Firestore (base de datos)
 
@@ -91,7 +85,7 @@ Los tres usuarios tienen los mismos permisos sobre la bóveda compartida. Ademá
 4. Reemplazá el contenido por el archivo `firestore.rules` incluido en el ZIP.
 5. Publicá las reglas.
 
-La primera sesión autorizada crea automáticamente las cinco categorías iniciales si todavía no existen. Firestore utiliza las colecciones `categorias`, `indicesCategorias` (control de nombres duplicados), `datos` y `papelera`.
+La primera sesión autorizada crea automáticamente las categorías iniciales que todavía no existan y que no hayan sido eliminadas definitivamente. Firestore utiliza las colecciones `categorias`, `indicesCategorias` (control de nombres duplicados), `categoriasEliminadasDefinitivamente` (marcadores internos), `datos` y `papelera`.
 
 **Importante:** desplegar la página web no publica las reglas de Firestore. Siempre que se modifique `firestore.rules`, hay que publicarlas por separado desde Firebase Console o mediante Firebase CLI.
 
@@ -107,7 +101,7 @@ No ejecutes ese comando hasta haber seleccionado el proyecto Firebase nuevo corr
 
 La aplicación conserva los registros eliminados durante **10 días**. La fecha `eliminadoEn` se genera con el reloj del servidor de Firestore. No hay que crear una política TTL ni habilitar facturación para esta función.
 
-Cuando cualquiera de las tres cuentas autorizadas inicia sesión, la aplicación consulta la papelera y elimina físicamente los documentos cuyo plazo de 10 días ya venció. La papelera también oculta los registros vencidos y bloquea su restauración aunque la limpieza física no haya podido completarse por falta de conexión. Si la limpieza falla, se informa el problema y se vuelve a intentar en el siguiente ingreso.
+En cada inicio de sesión autorizado, la aplicación consulta la papelera y elimina físicamente los documentos cuyo plazo de 10 días ya venció. La papelera también oculta los registros vencidos y bloquea su restauración aunque la limpieza física no haya podido completarse por falta de conexión. Si la limpieza falla, se informa el problema y se vuelve a intentar en el siguiente ingreso.
 
 **Alcance de esta modalidad:** si nadie abre la aplicación, los documentos vencidos pueden permanecer almacenados en Firestore hasta el próximo ingreso autorizado. No se usa un proceso de borrado en segundo plano de Google. Esta decisión evita depender de TTL y de su facturación.
 
@@ -128,8 +122,8 @@ Si modificás una variable de entorno en Vercel, necesitás generar un nuevo des
 ## Funcionamiento definido
 
 - Una sola página HTML, sin redirecciones entre HTML.
-- Inicio de sesión con Google limitado a las tres cuentas autorizadas.
-- Bóveda compartida y permisos iguales para las tres cuentas.
+- Inicio de sesión con Google limitado a las direcciones autorizadas en la configuración.
+- Bóveda compartida con permisos iguales para los usuarios habilitados.
 - Categorías iniciales: Claves, Números de cliente, DNI, CUIL y Otros.
 - Categorías personalizadas con iconos vectoriales o emojis. Si no se elige uno, se usa una carpeta genérica.
 - El formulario permite agregar una categoría nueva para el registro actual; queda oculta en el selector de futuras cargas hasta habilitarla desde Administración.
@@ -148,9 +142,9 @@ Si modificás una variable de entorno en Vercel, necesitás generar un nuevo des
 
 El acceso se limita en dos lugares: la interfaz verifica la cuenta iniciada y las reglas de Firestore vuelven a verificar la autenticación, el correo verificado y la lista de correos permitidos. Las reglas del servidor son la protección efectiva; ocultar botones o secciones en JavaScript no reemplaza esa protección.
 
-Firebase cifra las comunicaciones y los datos almacenados en su infraestructura. **Esta versión no implementa cifrado de extremo a extremo ni cifrado adicional en el navegador**: cualquiera de las tres cuentas autorizadas puede leer los datos de la bóveda. Los datos se guardan como contenido legible para las aplicaciones cliente autenticadas. Esta decisión coincide con la modalidad confirmada para el proyecto.
+Firebase cifra las comunicaciones y los datos almacenados en su infraestructura. **Esta versión no implementa cifrado de extremo a extremo ni cifrado adicional en el navegador**: cualquier usuario autorizado puede leer los datos de la bóveda. Los datos se guardan como contenido legible para las aplicaciones cliente autenticadas. Esta decisión coincide con la modalidad confirmada para el proyecto.
 
-No compartas el acceso a las cuentas autorizadas con terceros y cerrá la sesión si utilizás un dispositivo que no sea de confianza.
+No compartas el acceso a tu espacio con terceros y cerrá la sesión si utilizás un dispositivo que no sea de confianza.
 
 ## Estructura del proyecto
 
@@ -209,7 +203,7 @@ Se corrigió la clase CSS de la capa de carga: ahora `index.html`, `notificacion
 
 Esta entrega corrige los iconos de acciones (mostrar, ocultar, copiar, editar, eliminar, restaurar y papelera), hace que la rueda de configuración abra siempre en Categorías, y reemplaza el formulario permanente de alta por una tarjeta plegable «Agregar nueva categoría». El selector de iconos se superpone al formulario sin empujar los demás campos, con sus dibujos centrados. Las categorías eliminadas se agrupan al final de la lista de administración. Las notificaciones exitosas muestran una tilde y el acordeón «Nuevo dato» tiene una apertura más pausada.
 
-No se modifican las reglas de Firestore ni las variables de Firebase. Al actualizar, conservá `.env`, `package-lock.json` y `node_modules`.
+En la etapa 1.3 no se modificaron las reglas de Firestore ni las variables de Firebase. En la etapa 1.5 sí se actualizó `firestore.rules`; consultá la instrucción específica de publicación al final de este README. Al actualizar, conservá `.env`, `package-lock.json` y `node_modules`.
 
 
 ## Ajustes de transiciones y administración — Etapa 1.4
@@ -217,3 +211,14 @@ No se modifican las reglas de Firestore ni las variables de Firebase. Al actuali
 Se mantiene el modal de administración montado al cambiar entre Categorías y Papelera. El cambio de pestaña actualiza únicamente el contenido interno; volver a tocar la pestaña activa no ejecuta ninguna acción. El modal conserva dimensiones constantes y su contenido dispone de desplazamiento independiente.
 
 El formulario «Agregar nueva categoría» permanece montado dentro de un desplegable animado, sin desmontar la ventana de configuración. Las actualizaciones en tiempo real de Firestore reemplazan únicamente la lista de categorías o de papelera, por lo que no reinician el formulario ni su foco. Los acordeones principales y el selector de iconos utilizan transiciones más suaves.
+
+
+## Eliminación definitiva de categorías — Etapa 1.5
+
+Las categorías archivadas se agrupan en un desplegable al final de la administración. Desde ese grupo se pueden recuperar o eliminar definitivamente. La eliminación definitiva se bloquea si hay registros activos o registros en la papelera asociados a la categoría. Antes de completar la operación, la aplicación marca temporalmente la categoría como bloqueada; las reglas de Firestore verifican ese estado para impedir que se creen nuevas referencias durante el proceso.
+
+Si se elimina definitivamente una categoría inicial, queda un marcador interno en `categoriasEliminadasDefinitivamente` para evitar que la inicialización automática vuelva a crearla. Ese marcador no aparece en la interfaz y no interfiere con índices de otras categorías que puedan usar el mismo nombre más adelante.
+
+**Importante:** esta etapa modifica `firestore.rules`. Después de reemplazar los archivos del proyecto, hay que publicar las reglas nuevas desde Firebase Console → Firestore Database → Rules. Hasta publicarlas, la interfaz tendrá la nueva función, pero Firestore no aplicará la protección adicional contra nuevas referencias durante el borrado.
+
+En los formularios de alta, el selector de iconos no inicia con una opción seleccionada. Si no se elige ninguna, se guarda la carpeta genérica. En la edición de una categoría se muestra su icono actual.

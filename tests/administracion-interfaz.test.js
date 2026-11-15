@@ -70,3 +70,59 @@ test('las dos secciones principales mantienen los nuevos envoltorios accesibles'
   assert.match(plantillas, /id="envoltorio-nuevo-dato" aria-hidden="true" inert/);
   assert.match(plantillas, /id="envoltorio-datos" aria-hidden="false"/);
 });
+
+test('las categorías archivadas se presentan en un desplegable separado al final', () => {
+  assert.match(main, /const activas = categorias\.filter\(\(categoria\) => categoria\.activa\)/);
+  assert.match(main, /const archivadas = categorias\.filter\(\(categoria\) => !categoria\.activa\)/);
+  assert.match(main, /data-toggle-categorias-archivadas/);
+  assert.match(main, /desplegable-categorias-archivadas/);
+  assert.match(main, /aria-expanded="\$\{categoriasArchivadasAbiertas\}"/);
+});
+
+test('las categorías archivadas ofrecen recuperación y eliminación definitiva', () => {
+  assert.match(main, /data-admin-accion="recuperar"/);
+  assert.match(main, /data-admin-accion="eliminar-definitivamente"/);
+  assert.match(main, /function plantillaFilaCategoriaAdministracion/);
+});
+
+test('el botón de eliminación definitiva bloquea categorías con registros activos o en papelera', () => {
+  assert.match(main, /const cantidadActivos = datos\.filter\(\(registro\) => registro\.categoriaId === id\)\.length/);
+  assert.match(main, /const cantidadPapelera = papelera\.filter\(\(registro\) => registro\.categoriaId === id\)\.length/);
+  assert.match(main, /No se puede eliminar definitivamente/);
+});
+
+test('la eliminación definitiva verifica Firestore y conserva un marcador para categorías iniciales', async () => {
+  const servicio = await readFile(resolve(raiz, 'src/servicios/categorias.js'), 'utf8');
+  assert.match(servicio, /getDocsFromServer\(query\(collection\(db, 'datos'\), where\('categoriaId', '==', id\)\)\)/);
+  assert.match(servicio, /getDocsFromServer\(query\(collection\(db, 'papelera'\), where\('categoriaId', '==', id\)\)\)/);
+  assert.match(servicio, /eliminandoDefinitivamente: true/);
+  assert.match(servicio, /const COLECCION_ELIMINADAS_DEFINITIVAMENTE = 'categoriasEliminadasDefinitivamente'/);
+  assert.match(servicio, /const categoriaInicial = CATEGORIAS_INICIALES\.find/);
+  assert.match(servicio, /transaccion\.set\(referenciaEliminacionInicial/);
+  assert.match(servicio, /export async function eliminarCategoriaDefinitivamente/);
+});
+
+test('las reglas impiden agregar registros mientras una categoría se elimina definitivamente', async () => {
+  const rules = await readFile(resolve(raiz, 'firestore.rules'), 'utf8');
+  assert.match(rules, /match \/categoriasEliminadasDefinitivamente\/\{categoriaId\}/);
+  assert.match(rules, /function categoriaDisponible\(categoriaId\)/);
+  assert.match(rules, /existsAfter\(rutaCategoria\)/);
+  assert.match(rules, /getAfter\(rutaCategoria\)\.data\.eliminandoDefinitivamente != true/);
+  assert.match(rules, /allow create, update: if usuarioAutorizado\(\)\s*&& categoriaDisponible\(request\.resource\.data\.categoriaId\)/);
+});
+
+test('la interfaz no informa la cantidad de cuentas o usuarios habilitados', async () => {
+  const [plantillas, main] = await Promise.all([
+    readFile(resolve(raiz, 'src/interfaz/plantillas.js'), 'utf8'),
+    readFile(resolve(raiz, 'src/main.js'), 'utf8'),
+  ]);
+  const interfaz = `${plantillas}\n${main}`.toLocaleLowerCase('es-AR');
+  assert.doesNotMatch(interfaz, /tres cuentas|3 cuentas|tres usuarios|3 usuarios/);
+  assert.doesNotMatch(interfaz, /para las tres cuentas autorizadas/);
+});
+
+test('las categorías iniciales eliminadas definitivamente no se vuelven a crear al iniciar', async () => {
+  const servicio = await readFile(resolve(raiz, 'src/servicios/categorias.js'), 'utf8');
+  assert.match(servicio, /eliminada: doc\(db, COLECCION_ELIMINADAS_DEFINITIVAMENTE, categoria\.id\)/);
+  assert.match(servicio, /if \(documentoEliminacion\.exists\(\)\) return;/);
+});

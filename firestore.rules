@@ -13,6 +13,12 @@ service cloud.firestore {
         ];
     }
 
+    function categoriaDisponible(categoriaId) {
+      let rutaCategoria = /databases/$(database)/documents/categorias/$(categoriaId);
+      return existsAfter(rutaCategoria)
+        && getAfter(rutaCategoria).data.eliminandoDefinitivamente != true;
+    }
+
     match /categorias/{categoriaId} {
       allow read, write: if usuarioAutorizado();
     }
@@ -21,12 +27,22 @@ service cloud.firestore {
       allow read, write: if usuarioAutorizado();
     }
 
-    match /datos/{datoId} {
+    match /categoriasEliminadasDefinitivamente/{categoriaId} {
       allow read, write: if usuarioAutorizado();
     }
 
+    match /datos/{datoId} {
+      allow read: if usuarioAutorizado();
+      allow create, update: if usuarioAutorizado()
+        && categoriaDisponible(request.resource.data.categoriaId);
+      allow delete: if usuarioAutorizado();
+    }
+
     match /papelera/{datoId} {
-      allow read, write: if usuarioAutorizado();
+      allow read: if usuarioAutorizado();
+      allow create, update: if usuarioAutorizado()
+        && categoriaDisponible(request.resource.data.categoriaId);
+      allow delete: if usuarioAutorizado();
     }
 
     // Todo lo que no esté declarado arriba queda cerrado por defecto.

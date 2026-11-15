@@ -214,6 +214,22 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .lista-administracion-categorias, .lista-papelera { display: grid; gap: 7px; }
 .fila-administracion-categoria { display: flex; align-items: center; gap: 11px; min-height: 59px; padding: 9px 10px; border: 1px solid #f0e8e0; border-radius: 11px; background: #fffefa; }
 .fila-administracion-categoria.categoria-inactiva { background: #f8f4ef; opacity: .78; }
+
+.seccion-categorias-archivadas { display: grid; gap: 7px; margin-top: 5px; }
+.tarjeta-categorias-archivadas { width: 100%; text-align: left; cursor: pointer; background: #f8f4ef; }
+.tarjeta-categorias-archivadas:hover { border-color: #d9b7c1; background: #fff9fa; }
+.tarjeta-categorias-archivadas .icono-admin-categoria { color: #8a776b; }
+.contador-categorias-archivadas { min-width: 22px; height: 22px; display: grid; place-items: center; margin-left: auto; border-radius: 50%; color: var(--rosado-oscuro); background: var(--rosado-suave); font-size: 10px; font-weight: 700; }
+.flecha-categorias-archivadas { display: grid; place-items: center; color: #9f8c81; transition: transform .25s ease; }
+.flecha-categorias-archivadas svg { width: 16px; height: 16px; }
+.tarjeta-categorias-archivadas[aria-expanded="true"] .flecha-categorias-archivadas { transform: rotate(180deg); }
+.desplegable-categorias-archivadas { display: grid; grid-template-rows: 0fr; opacity: 0; overflow: hidden; transition: grid-template-rows .42s cubic-bezier(.22,.72,.22,1), opacity .32s ease; }
+.desplegable-categorias-archivadas.abierto { grid-template-rows: 1fr; opacity: 1; }
+.desplegable-categorias-archivadas-interior { min-height: 0; overflow: hidden; }
+.lista-categorias-archivadas { padding: 3px 0 2px; }
+.acciones-admin-categoria .accion-eliminar { color: #a95c63; }
+.boton-seleccion-icono.sin-icono-elegido .texto-seleccion-icono { color: var(--texto-suave); font-size: 10px; white-space: normal; line-height: 1.35; }
+.boton-seleccion-icono .vista-previa-icono.oculto { display: none; }
 .icono-admin-categoria { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; color: var(--tierra); background: #f5eee6; }
 .texto-admin-categoria { min-width: 0; display: grid; gap: 3px; }
 .texto-admin-categoria strong { overflow: hidden; color: var(--tierra-oscuro); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -274,6 +290,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .envoltorio-acordeon,
   .envoltorio-acordeon > .contenido-acordeon,
   .desplegable-formulario-categoria,
+  .desplegable-categorias-archivadas,
   .panel-opciones-iconos,
   .panel-contenido-administracion > .contenido-administracion,
   .flecha-acordeon,
@@ -349,6 +366,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .acciones-nueva-categoria > .boton { min-height: 37px; }
   .panel-opciones-iconos { width: min(330px, calc(100vw - 72px)); }
   .fila-administracion-categoria { gap: 7px; padding: 7px; }
+  .tarjeta-categorias-archivadas { min-height: 52px; }
   .icono-admin-categoria { width: 29px; height: 29px; }
   .icono-admin-categoria .icono-vector { width: 16px; height: 16px; }
   .texto-admin-categoria strong { font-size: 10px; }

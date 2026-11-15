@@ -78,22 +78,23 @@ export function renderizarIcono(icono, clase = '') {
   return `<svg class="icono-vector ${escaparHTML(clase)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dibujo}</svg>`;
 }
 
-export function renderizarSelectorIconos(nombreCampo, seleccionado = 'vector:folder') {
-  const opcionSeleccionada = OPCIONES_ICONOS.find((opcion) => `${opcion.tipo}:${opcion.valor}` === seleccionado) || OPCIONES_ICONOS[0];
+export function renderizarSelectorIconos(nombreCampo, seleccionado = '') {
+  const claveSeleccionada = String(seleccionado || '');
+  const opcionSeleccionada = OPCIONES_ICONOS.find((opcion) => `${opcion.tipo}:${opcion.valor}` === claveSeleccionada) || null;
   const opcionesVectoriales = OPCIONES_ICONOS.filter((opcion) => opcion.tipo === 'vector');
   const opcionesEmoji = OPCIONES_ICONOS.filter((opcion) => opcion.tipo === 'emoji');
 
   const renderizarOpcion = (opcion) => {
     const clave = `${opcion.tipo}:${opcion.valor}`;
-    const activa = clave === `${opcionSeleccionada.tipo}:${opcionSeleccionada.valor}`;
+    const activa = clave === claveSeleccionada;
     return `<button class="opcion-icono ${activa ? 'seleccionada' : ''}" type="button" data-elegir-icono="${escaparHTML(clave)}" title="${escaparHTML(opcion.etiqueta)}" aria-label="${escaparHTML(opcion.etiqueta)}" aria-pressed="${activa ? 'true' : 'false'}">${renderizarIcono(opcion)}</button>`;
   };
 
   return `<div class="selector-iconos">
-    <input type="hidden" name="${escaparHTML(nombreCampo)}" value="${escaparHTML(`${opcionSeleccionada.tipo}:${opcionSeleccionada.valor}`)}" />
-    <button class="boton-seleccion-icono" type="button" data-abrir-iconos aria-expanded="false">
-      <span class="vista-previa-icono">${renderizarIcono(opcionSeleccionada)}</span>
-      <span class="texto-seleccion-icono">${escaparHTML(opcionSeleccionada.etiqueta)}</span>
+    <input type="hidden" name="${escaparHTML(nombreCampo)}" value="${escaparHTML(claveSeleccionada)}" />
+    <button class="boton-seleccion-icono ${opcionSeleccionada ? 'icono-elegido' : 'sin-icono-elegido'}" type="button" data-abrir-iconos aria-expanded="false">
+      <span class="vista-previa-icono ${opcionSeleccionada ? '' : 'oculto'}">${opcionSeleccionada ? renderizarIcono(opcionSeleccionada) : ''}</span>
+      <span class="texto-seleccion-icono">${opcionSeleccionada ? escaparHTML(opcionSeleccionada.etiqueta) : 'Si no elegís un icono, se usará uno genérico'}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </button>
     <div class="panel-opciones-iconos">
@@ -104,19 +105,36 @@ export function renderizarSelectorIconos(nombreCampo, seleccionado = 'vector:fol
 }
 
 function aplicarSeleccionIcono(selector, clave) {
-  const elegida = OPCIONES_ICONOS.find((item) => `${item.tipo}:${item.valor}` === clave);
-  if (!selector || !elegida) return;
+  if (!selector) return;
   const entrada = selector.querySelector('input[type="hidden"]');
   const boton = selector.querySelector('[data-abrir-iconos]');
-  if (!entrada || !boton) return;
-  entrada.value = clave;
+  const vistaPrevia = selector.querySelector('.vista-previa-icono');
+  const texto = selector.querySelector('.texto-seleccion-icono');
+  if (!entrada || !boton || !vistaPrevia || !texto) return;
+
+  const claveLimpia = String(clave || '');
+  const elegida = OPCIONES_ICONOS.find((item) => `${item.tipo}:${item.valor}` === claveLimpia) || null;
+  entrada.value = elegida ? claveLimpia : '';
   selector.querySelectorAll('[data-elegir-icono]').forEach((elemento) => {
-    const activa = elemento.dataset.elegirIcono === clave;
+    const activa = Boolean(elegida) && elemento.dataset.elegirIcono === claveLimpia;
     elemento.classList.toggle('seleccionada', activa);
     elemento.setAttribute('aria-pressed', String(activa));
   });
-  selector.querySelector('.vista-previa-icono').innerHTML = renderizarIcono(elegida);
-  selector.querySelector('.texto-seleccion-icono').textContent = elegida.etiqueta;
+
+  if (elegida) {
+    vistaPrevia.innerHTML = renderizarIcono(elegida);
+    vistaPrevia.classList.remove('oculto');
+    texto.textContent = elegida.etiqueta;
+    boton.classList.add('icono-elegido');
+    boton.classList.remove('sin-icono-elegido');
+  } else {
+    vistaPrevia.innerHTML = '';
+    vistaPrevia.classList.add('oculto');
+    texto.textContent = 'Si no elegís un icono, se usará uno genérico';
+    boton.classList.remove('icono-elegido');
+    boton.classList.add('sin-icono-elegido');
+  }
+
   selector.classList.remove('selector-iconos-abierto');
   boton.setAttribute('aria-expanded', 'false');
 }
