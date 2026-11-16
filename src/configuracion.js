@@ -1,6 +1,6 @@
 export const CORREOS_AUTORIZADOS = Object.freeze([
   'mauricio.ariel.buda@gmail.com',
-  'moniacevedo1970@gmail.com',
+  'monicacevedo1970@gmail.com',
   'pablobuda70@gmail.com',
 ]);
 

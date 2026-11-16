@@ -20,7 +20,7 @@ const registroEjemplo = {
   creadoPorCorreo: 'mauricio.ariel.buda@gmail.com',
   editadoEn: new Date('2026-11-15T13:00:00Z'),
   editadoPor: 'uid-ro',
-  editadoPorCorreo: 'moniacevedo1970@gmail.com',
+  editadoPorCorreo: 'monicacevedo1970@gmail.com',
 };
 
 test('el servicio de favoritos observa y guarda favoritos separados por usuario', async () => {

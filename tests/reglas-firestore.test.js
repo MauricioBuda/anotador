@@ -14,7 +14,7 @@ test('las reglas mantienen acceso exclusivo para las cuentas configuradas y Goog
   assert.match(reglas, /request\.auth\.token\.firebase\.sign_in_provider\s*==\s*'google\.com'/);
   for (const correo of [
     'mauricio.ariel.buda@gmail.com',
-    'moniacevedo1970@gmail.com',
+    'monicacevedo1970@gmail.com',
     'pablobuda70@gmail.com',
   ]) assert.ok(reglas.includes(correo));
 });
